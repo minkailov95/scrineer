@@ -530,7 +530,7 @@
         coinPrices[activeCoin] = last.close;
         updateIndicators();
         updateInfoBlocks();
-        drawFractals();
+        try { drawFractals(); } catch(e) {}
       } catch(err) {}
     };
     klineWS.onclose = function() { if (activeCoin) setTimeout(connectKlineWS, 3000); };
@@ -770,8 +770,7 @@
     candleSeries.setData(klineData);
     chart.timeScale().fitContent();
     updateIndicators();
-    clearFractals();
-    drawFractals();
+    setTimeout(function() { clearFractals(); drawFractals(); }, 200);
   }
 
   function updateIndicators() {
@@ -942,8 +941,9 @@
   }
 
   function drawFractals() {
+    try {
     clearFractals();
-    if (klineData.length < 7 || !chart) return;
+    if (klineData.length < 7 || !chart || !candleSeries) return;
     var f = calcFractals();
     var lastTime = klineData[klineData.length - 1].time;
 
@@ -987,6 +987,7 @@
       }
       fractalLowSeries.setData(ld);
     }
+    } catch(e) { /* fractals optional, don't break chart */ }
   }
 
   // ============================================================
