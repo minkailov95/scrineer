@@ -110,6 +110,19 @@
     .chart-area { flex: 1; background: var(--bg); position: relative; min-width: 0; overflow: hidden; }
     #chartContainer { width: 100%; height: 100%; }
 
+    .price-tag {
+      position: absolute; right: 0; z-index: 10;
+      padding: 2px 8px; border-radius: 3px 0 0 3px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; font-weight: 700;
+      line-height: 1.4; white-space: nowrap;
+      pointer-events: none;
+      transform: translateY(-50%);
+      transition: top 0.15s ease;
+    }
+    .price-tag.up { background: var(--green); color: #080B10; }
+    .price-tag.down { background: var(--red); color: #FFFFFF; }
+
     .info-blocks {
       position: absolute; bottom: 6px; left: 8px;
       display: flex; gap: 4px; pointer-events: none;
@@ -249,6 +262,7 @@
 
   <div class="chart-area" id="chartArea">
     <div id="chartContainer"></div>
+    <div class="price-tag up" id="priceTag" style="display:none;">—</div>
     <div class="info-blocks" id="infoBlocks">
       <div class="info-block"><span class="inf-label">[24ч] Об:</span><span class="inf-val" id="infoVol">—</span></div>
       <div class="info-block"><span class="inf-label">Изм:</span><span class="inf-val" id="infoChg">—</span></div>
@@ -500,6 +514,7 @@
     if (p > last.high) last.high = p;
     if (p < last.low) last.low = p;
     updateInfoBlocks();
+    updatePriceTag();
     if (candleSeries) {
       try { candleSeries.update(last); } catch(ex) {}
     }
@@ -676,11 +691,31 @@
     $('infoOI').textContent = '—';
     $('updateTime').textContent = new Date().toLocaleTimeString();
     priceDecimals = getDec(activeCoin);
+    updatePriceTag();
   }
 
   // ============================================================
-  // CHART ENGINE (Lightweight Charts)
+  // PRICE TAG
   // ============================================================
+  function updatePriceTag() {
+    var tag = $('priceTag');
+    if (!tag || !candleSeries || klineData.length === 0) return;
+    var last = klineData[klineData.length - 1];
+    var price = coinPrices[activeCoin] || last.close;
+    var up = last.close >= last.open;
+    tag.textContent = parseFloat(price.toFixed(6)).toString();
+    tag.className = 'price-tag ' + (up ? 'up' : 'down');
+    try {
+      var y = candleSeries.priceToY(price);
+      if (y !== null && y > 0) {
+        tag.style.top = y + 'px';
+        tag.style.display = 'block';
+      } else {
+        tag.style.display = 'none';
+      }
+    } catch(e) { tag.style.display = 'none'; }
+  }
+
   function initChart() {
     if (chart) {
       try { chart.remove(); } catch(e) {}
@@ -693,10 +728,10 @@
     }
 
     chart = LightweightCharts.createChart(container, {
-      layout: { background: { type: 'solid', color: '#080B10' }, textColor: '#5C6570' },
-      grid: { vertLines: { color: '#141920' }, horzLines: { color: '#141920' } },
+      layout: { background: { type: 'solid', color: '#080B10' }, textColor: '#5C6570', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 },
+      grid: { vertLines: { color: '#1A1F29' }, horzLines: { color: 'rgba(28,33,40,0.3)' } },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-      rightPriceScale: { borderColor: '#1C2128', autoScale: true, priceFormat: { type: 'custom', formatter: function(p) { return parseFloat(p.toFixed(6)).toString(); }, minMove: 1e-12 } },
+      rightPriceScale: { borderVisible: false, autoScale: true, entireTextOnly: true, priceFormat: { type: 'custom', formatter: function(p) { return parseFloat(p.toFixed(6)).toString(); }, minMove: 0.01 } },
       timeScale: { borderColor: '#1C2128', timeVisible: true, secondsVisible: false },
       localization: { priceFormatter: function(p) { return parseFloat(p.toFixed(6)).toString(); } },
       handleScroll: { vertTouchDrag: false },
