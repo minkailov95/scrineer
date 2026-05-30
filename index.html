@@ -672,7 +672,7 @@
       var chEl = $('infoChg');
       chEl.textContent = ch >= 0 ? '+' + ch.toFixed(2) + '%' : ch.toFixed(2) + '%';
       chEl.style.color = ch >= 0 ? C.candleUp : C.candleDown;
-      $('currentPriceLabel').textContent = '$' + fmtPrice(activeCoin, parseFloat(t.lastPrice));
+      $('currentPriceLabel').textContent = '$' + parseFloat(parseFloat(t.lastPrice).toFixed(6)).toString();
       $('currentPriceLabel').style.color = ch >= 0 ? C.candleUp : C.candleDown;
     } catch(e) {}
 
@@ -776,11 +776,11 @@
         price = best;
       }
 
-      $('ohlcInfo').textContent = 'O: ' + d.open + ' H: ' + d.high + ' L: ' + d.low + ' C: ' + d.close;
+      $('ohlcInfo').textContent = 'O: ' + parseFloat(d.open.toFixed(6)) + ' H: ' + parseFloat(d.high.toFixed(6)) + ' L: ' + parseFloat(d.low.toFixed(6)) + ' C: ' + parseFloat(d.close.toFixed(6));
       var crossInfoEl = $('crosshairInfo');
       crossInfoEl.style.display = 'block';
       var date = new Date(d.time * 1000);
-      crossInfoEl.textContent = date.getDate() + '/' + (date.getMonth() + 1) + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0') + ' | ' + (magnetActive ? '>> ' : '') + price;
+      crossInfoEl.textContent = date.getDate() + '/' + (date.getMonth() + 1) + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0') + ' | ' + (magnetActive ? '>> ' : '') + parseFloat(price.toFixed(6));
     });
 
     // Click for drawing tools
