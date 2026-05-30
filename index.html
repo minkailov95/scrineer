@@ -822,8 +822,7 @@
   var raySeriesList = [];   // line series for right-only rays
   var fractalHighLines = [];
   var fractalLowLines = [];
-  var fractalHighSeries = null;
-  var fractalLowSeries = null;
+  var fractalSeriesList = [];
 
   function clearPriceLines() {
     priceLines.forEach(function(pl) {
@@ -840,8 +839,10 @@
   }
 
   function clearFractals() {
-    fractalHighLines.forEach(function(pl) { try { candleSeries.removePriceLine(pl); } catch(e) {} });
-    fractalLowLines.forEach(function(pl) { try { candleSeries.removePriceLine(pl); } catch(e) {} });
+    fractalSeriesList.forEach(function(s) {
+      try { chart.removeSeries(s); } catch(e) {}
+    });
+    fractalSeriesList = [];
     fractalHighLines = [];
     fractalLowLines = [];
   }
@@ -958,23 +959,36 @@
       clearFractals();
       if (klineData.length < 7 || !chart || !candleSeries) return;
       var f = calcFractals();
+      var lastTime = klineData[klineData.length - 1].time;
 
       f.highs.forEach(function(h) {
-        var pl = candleSeries.createPriceLine({
-          price: h.value, color: 'rgba(234,57,67,0.5)',
-          lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed,
-          axisLabelVisible: true, title: String(h.value),
+        var s = chart.addLineSeries({
+          color: 'rgba(234,57,67,0.5)',
+          lineWidth: 1,
+          priceScaleId: 'right',
+          lastValueVisible: true,
+          priceLineVisible: false,
         });
-        fractalHighLines.push(pl);
+        s.setData([
+          { time: h.time, value: h.value },
+          { time: lastTime, value: h.value }
+        ]);
+        fractalSeriesList.push(s);
       });
 
       f.lows.forEach(function(l) {
-        var pl = candleSeries.createPriceLine({
-          price: l.value, color: 'rgba(22,199,132,0.5)',
-          lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed,
-          axisLabelVisible: true, title: String(l.value),
+        var s = chart.addLineSeries({
+          color: 'rgba(22,199,132,0.5)',
+          lineWidth: 1,
+          priceScaleId: 'right',
+          lastValueVisible: true,
+          priceLineVisible: false,
         });
-        fractalLowLines.push(pl);
+        s.setData([
+          { time: l.time, value: l.value },
+          { time: lastTime, value: l.value }
+        ]);
+        fractalSeriesList.push(s);
       });
     } catch(e) {}
   }
@@ -1013,14 +1027,16 @@
   });
 
   $('drawFractal').addEventListener('click', function() {
-    if (fractalHighSeries || fractalLowSeries) {
+    if (fractalSeriesList.length > 0) {
       clearFractals();
       $('drawFractal').classList.remove('active');
       $('drawFractal').style.color = C.orange;
     } else {
       try { drawFractals(); } catch(e) {}
-      $('drawFractal').classList.add('active');
-      $('drawFractal').style.color = C.gold;
+      if (fractalSeriesList.length > 0) {
+        $('drawFractal').classList.add('active');
+        $('drawFractal').style.color = C.gold;
+      }
     }
   });
 
