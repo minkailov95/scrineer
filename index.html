@@ -225,8 +225,8 @@
   <div class="ind-dropdown" id="indDropdown">
     <button class="tb-ind" id="indBtn">⚙ Индикаторы ▾</button>
     <div class="ind-menu" id="indMenu" style="display:none;">
-      <label class="ind-item"><input type="checkbox" id="indBB" checked> Bollinger Bands</label>
-      <label class="ind-item"><input type="checkbox" id="indSMA" checked> SMA 20</label>
+      <label class="ind-item"><input type="checkbox" id="indBB"> Bollinger Bands</label>
+      <label class="ind-item"><input type="checkbox" id="indSMA"> SMA 20</label>
       <label class="ind-item"><input type="checkbox" id="indRSI"> RSI 14</label>
     </div>
   </div>
@@ -314,7 +314,7 @@
   var priceDecimals = 2;
   var priceWS = null;
   var klineWS = null;
-  var showBB = true, showSMA = true, showRSI = false;
+  var showBB = false, showSMA = false, showRSI = false;
   var drawMode = 'cursor';
   var magnetActive = false;
   var rulers = [];
@@ -530,6 +530,7 @@
         coinPrices[activeCoin] = last.close;
         updateIndicators();
         updateInfoBlocks();
+        drawFractals();
       } catch(err) {}
     };
     klineWS.onclose = function() { if (activeCoin) setTimeout(connectKlineWS, 3000); };
@@ -620,6 +621,7 @@
         tbody.querySelectorAll('tr').forEach(function(r) { r.classList.remove('active'); });
         row.classList.add('active');
         rulers = []; hLines = []; pendingRuler = null;
+        clearPriceLines(); clearRaySeries(); clearFractals();
         await loadChartData();
         connectKlineWS();
         updateInfoBlocks();
@@ -694,7 +696,7 @@
       layout: { background: { type: 'solid', color: '#080B10' }, textColor: '#5C6570' },
       grid: { vertLines: { color: '#141920' }, horzLines: { color: '#141920' } },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-      rightPriceScale: { borderColor: '#1C2128', autoScale: true },
+      rightPriceScale: { borderColor: '#1C2128', autoScale: true, priceFormat: { type: 'custom', formatter: function(p) { return p; }, minMove: 1e-8 } },
       timeScale: { borderColor: '#1C2128', timeVisible: true, secondsVisible: false },
       handleScroll: { vertTouchDrag: false },
     });
@@ -718,16 +720,31 @@
       visible: false,
     });
 
-    // Crosshair - show OHLC
+    // Crosshair with magnet snap
     chart.subscribeCrosshairMove(function(param) {
       if (!param.time || !param.seriesData || param.point === undefined) return;
       var d = param.seriesData.get(candleSeries);
       if (!d) return;
-      $('ohlcInfo').textContent = 'O: ' + d.open.toFixed(priceDecimals) + ' H: ' + d.high.toFixed(priceDecimals) + ' L: ' + d.low.toFixed(priceDecimals) + ' C: ' + d.close.toFixed(priceDecimals);
+      var price = d.close;
+      var time = d.time;
+
+      // Magnet snap crosshair to nearest OHLC
+      if (magnetActive && param.point) {
+        var ohlc = [d.open, d.high, d.low, d.close];
+        var mousePrice = param.point.price;
+        var best = ohlc[0], bestDist = Math.abs(ohlc[0] - mousePrice);
+        for (var k = 1; k < ohlc.length; k++) {
+          var dist = Math.abs(ohlc[k] - mousePrice);
+          if (dist < bestDist) { bestDist = dist; best = ohlc[k]; }
+        }
+        price = best;
+      }
+
+      $('ohlcInfo').textContent = 'O: ' + d.open + ' H: ' + d.high + ' L: ' + d.low + ' C: ' + d.close;
       var crossInfoEl = $('crosshairInfo');
       crossInfoEl.style.display = 'block';
       var date = new Date(d.time * 1000);
-      crossInfoEl.textContent = date.getDate() + '/' + (date.getMonth() + 1) + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0') + ' | ' + d.close.toFixed(priceDecimals);
+      crossInfoEl.textContent = date.getDate() + '/' + (date.getMonth() + 1) + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0') + ' | ' + (magnetActive ? '>> ' : '') + price;
     });
 
     // Click for drawing tools
@@ -753,6 +770,8 @@
     candleSeries.setData(klineData);
     chart.timeScale().fitContent();
     updateIndicators();
+    clearFractals();
+    drawFractals();
   }
 
   function updateIndicators() {
@@ -802,6 +821,9 @@
   // DRAWING TOOLS
   // ============================================================
   var priceLines = [];
+  var raySeriesList = [];   // line series for right-only rays
+  var fractalHighLines = [];
+  var fractalLowLines = [];
 
   function clearPriceLines() {
     priceLines.forEach(function(pl) {
@@ -810,12 +832,41 @@
     priceLines = [];
   }
 
+  function clearRaySeries() {
+    raySeriesList.forEach(function(s) {
+      try { chart.removeSeries(s); } catch(e) {}
+    });
+    raySeriesList = [];
+  }
+
+  function clearFractals() {
+    fractalHighLines.forEach(function(pl) { try { candleSeries.removePriceLine(pl); } catch(e) {} });
+    fractalLowLines.forEach(function(pl) { try { candleSeries.removePriceLine(pl); } catch(e) {} });
+    fractalHighLines = [];
+    fractalLowLines = [];
+  }
+
+  function addRayRight(price, color, startTime) {
+    if (!chart || klineData.length === 0) return;
+    var lastTime = klineData[klineData.length - 1].time;
+    var s = chart.addLineSeries({
+      color: color, lineWidth: 1.5, priceScaleId: 'right',
+      lastValueVisible: true,
+    });
+    s.setData([
+      { time: startTime, value: price },
+      { time: lastTime, value: price }
+    ]);
+    raySeriesList.push(s);
+    return s;
+  }
+
   function addPriceLine(price, color, title) {
     if (!candleSeries) return;
     var pl = candleSeries.createPriceLine({
       price: price, color: color || C.purple,
       lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed,
-      axisLabelVisible: true, title: title || price.toFixed(priceDecimals || 2),
+      axisLabelVisible: true, title: title || price.toString(),
     });
     priceLines.push(pl);
     return pl;
@@ -828,8 +879,8 @@
     var time = param.time;
     var price = d.close;
 
-    // Magnet snap
-    if (magnetActive && drawMode !== 'cursor') {
+    // Magnet snap — find nearest OHLC
+    if (magnetActive) {
       var ohlc = [d.open, d.high, d.low, d.close];
       var best = ohlc[0], bestDist = Math.abs(ohlc[0] - price);
       for (var k = 1; k < ohlc.length; k++) {
@@ -840,18 +891,19 @@
     }
 
     if (drawMode === 'hline') {
-      addPriceLine(price, C.purple, fmtPrice(activeCoin, price));
+      addPriceLine(price, C.purple, price.toString());
       return;
     }
 
     if (drawMode === 'ray') {
       if (!pendingRuler) {
         pendingRuler = { price1: price, time1: time };
-        addPriceLine(price, C.orange, 'A: ' + fmtPrice(activeCoin, price));
+        addPriceLine(price, C.orange, 'A: ' + price.toString());
       } else {
         var pct = ((price - pendingRuler.price1) / pendingRuler.price1 * 100);
         rulers.push({ price1: pendingRuler.price1, price2: price, pct: pct });
-        addPriceLine(price, C.orange, 'B: ' + fmtPrice(activeCoin, price) + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)');
+        addRayRight(pendingRuler.price1, C.orange, pendingRuler.time1);
+        addPriceLine(price, C.orange, 'B: ' + price.toString() + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)');
         pendingRuler = null;
       }
       return;
@@ -859,13 +911,56 @@
 
     if (drawMode === 'cursor' && !pendingRuler) {
       pendingRuler = { price1: price, time1: time };
-      addPriceLine(price, C.orange, 'A: ' + fmtPrice(activeCoin, price));
+      addPriceLine(price, C.orange, 'A: ' + price.toString());
     } else if (pendingRuler && drawMode === 'cursor') {
       var pct2 = ((price - pendingRuler.price1) / pendingRuler.price1 * 100);
       rulers.push({ price1: pendingRuler.price1, price2: price, pct: pct2 });
-      addPriceLine(price, C.orange, 'B: ' + fmtPrice(activeCoin, price) + ' (' + (pct2 >= 0 ? '+' : '') + pct2.toFixed(2) + '%)');
+      addRayRight(pendingRuler.price1, C.orange, pendingRuler.time1);
+      addPriceLine(price, C.orange, 'B: ' + price.toString() + ' (' + (pct2 >= 0 ? '+' : '') + pct2.toFixed(2) + '%)');
       pendingRuler = null;
     }
+  }
+
+  // ============================================================
+  // FRACTALS (Williams, step=3)
+  // ============================================================
+  function calcFractals() {
+    if (klineData.length < 7) return { highs: [], lows: [] };
+    var highs = [], lows = [];
+    for (var i = 3; i < klineData.length - 3; i++) {
+      var d = klineData[i];
+      var isHigh = d.high >= klineData[i-1].high && d.high >= klineData[i-2].high && d.high >= klineData[i-3].high &&
+                   d.high >= klineData[i+1].high && d.high >= klineData[i+2].high && d.high >= klineData[i+3].high;
+      if (isHigh) highs.push({ time: d.time, value: d.high, idx: i });
+      var isLow = d.low <= klineData[i-1].low && d.low <= klineData[i-2].low && d.low <= klineData[i-3].low &&
+                  d.low <= klineData[i+1].low && d.low <= klineData[i+2].low && d.low <= klineData[i+3].low;
+      if (isLow) lows.push({ time: d.time, value: d.low, idx: i });
+    }
+    return { highs: highs, lows: lows };
+  }
+
+  function drawFractals() {
+    clearFractals();
+    if (klineData.length < 7) return;
+    var f = calcFractals();
+
+    // Use price lines for fractals (full width, clean)
+    f.highs.forEach(function(h) {
+      var pl = candleSeries.createPriceLine({
+        price: h.value, color: 'rgba(234,57,67,0.45)',
+        lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Solid,
+        axisLabelVisible: false,
+      });
+      fractalHighLines.push(pl);
+    });
+    f.lows.forEach(function(l) {
+      var pl = candleSeries.createPriceLine({
+        price: l.value, color: 'rgba(22,199,132,0.45)',
+        lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Solid,
+        axisLabelVisible: false,
+      });
+      fractalLowLines.push(pl);
+    });
   }
 
   // ============================================================
@@ -897,6 +992,8 @@
     hLines = [];
     pendingRuler = null;
     clearPriceLines();
+    clearRaySeries();
+    clearFractals();
   });
 
   // ============================================================
@@ -939,6 +1036,7 @@
       if (tf === '1d') { btn.style.background = 'var(--border)'; btn.style.color = 'var(--text)'; }
       activeInterval = tf;
       rulers = []; hLines = []; pendingRuler = null;
+      clearPriceLines(); clearRaySeries(); clearFractals();
       await loadChartData();
       connectKlineWS();
     });
@@ -965,6 +1063,7 @@
       $('statusText').textContent = 'Binance · ' + activeCoin + ' · ' + klineData.length + ' св.';
       priceDecimals = getDec(activeCoin);
       clearPriceLines();
+      clearRaySeries();
       rulers = []; hLines = []; pendingRuler = null;
       if (chartReady) {
         setChartData();
