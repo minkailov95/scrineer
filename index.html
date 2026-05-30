@@ -824,6 +824,8 @@
   var raySeriesList = [];   // line series for right-only rays
   var fractalHighLines = [];
   var fractalLowLines = [];
+  var fractalHighSeries = null;
+  var fractalLowSeries = null;
 
   function clearPriceLines() {
     priceLines.forEach(function(pl) {
@@ -840,8 +842,8 @@
   }
 
   function clearFractals() {
-    fractalHighLines.forEach(function(pl) { try { candleSeries.removePriceLine(pl); } catch(e) {} });
-    fractalLowLines.forEach(function(pl) { try { candleSeries.removePriceLine(pl); } catch(e) {} });
+    if (fractalHighSeries) { try { chart.removeSeries(fractalHighSeries); } catch(e) {} fractalHighSeries = null; }
+    if (fractalLowSeries) { try { chart.removeSeries(fractalLowSeries); } catch(e) {} fractalLowSeries = null; }
     fractalHighLines = [];
     fractalLowLines = [];
   }
@@ -851,7 +853,7 @@
     var lastTime = klineData[klineData.length - 1].time;
     var s = chart.addLineSeries({
       color: color, lineWidth: 1.5, priceScaleId: 'right',
-      lastValueVisible: true,
+      lastValueVisible: true, priceLineVisible: false,
     });
     s.setData([
       { time: startTime, value: price },
@@ -941,26 +943,50 @@
 
   function drawFractals() {
     clearFractals();
-    if (klineData.length < 7) return;
+    if (klineData.length < 7 || !chart) return;
     var f = calcFractals();
+    var lastTime = klineData[klineData.length - 1].time;
 
-    // Use price lines for fractals (full width, clean)
-    f.highs.forEach(function(h) {
-      var pl = candleSeries.createPriceLine({
-        price: h.value, color: 'rgba(234,57,67,0.45)',
-        lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Solid,
-        axisLabelVisible: false,
+    // High fractals -> red rays to the right
+    if (f.highs.length > 0) {
+      fractalHighSeries = chart.addLineSeries({
+        color: 'rgba(234,57,67,0.55)', lineWidth: 1.2, priceScaleId: 'right',
+        lastValueVisible: true, priceLineVisible: false,
       });
-      fractalHighLines.push(pl);
-    });
-    f.lows.forEach(function(l) {
-      var pl = candleSeries.createPriceLine({
-        price: l.value, color: 'rgba(22,199,132,0.45)',
-        lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Solid,
-        axisLabelVisible: false,
+      f.highs.sort(function(a, b) { return a.time - b.time; });
+      var hd = [];
+      for (var j = 0; j < f.highs.length; j++) {
+        hd.push({ time: f.highs[j].time, value: f.highs[j].value });
+        if (j < f.highs.length - 1) {
+          hd.push({ time: f.highs[j + 1].time - 1, value: f.highs[j].value });
+          // null to break line before next segment
+          hd.push({ time: f.highs[j + 1].time, value: null });
+        } else {
+          hd.push({ time: lastTime, value: f.highs[j].value });
+        }
+      }
+      fractalHighSeries.setData(hd);
+    }
+
+    // Low fractals -> green rays to the right
+    if (f.lows.length > 0) {
+      fractalLowSeries = chart.addLineSeries({
+        color: 'rgba(22,199,132,0.55)', lineWidth: 1.2, priceScaleId: 'right',
+        lastValueVisible: true, priceLineVisible: false,
       });
-      fractalLowLines.push(pl);
-    });
+      f.lows.sort(function(a, b) { return a.time - b.time; });
+      var ld = [];
+      for (var k = 0; k < f.lows.length; k++) {
+        ld.push({ time: f.lows[k].time, value: f.lows[k].value });
+        if (k < f.lows.length - 1) {
+          ld.push({ time: f.lows[k + 1].time - 1, value: f.lows[k].value });
+          ld.push({ time: f.lows[k + 1].time, value: null });
+        } else {
+          ld.push({ time: lastTime, value: f.lows[k].value });
+        }
+      }
+      fractalLowSeries.setData(ld);
+    }
   }
 
   // ============================================================
