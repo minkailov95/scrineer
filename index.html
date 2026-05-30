@@ -696,7 +696,7 @@
       layout: { background: { type: 'solid', color: '#080B10' }, textColor: '#5C6570' },
       grid: { vertLines: { color: '#141920' }, horzLines: { color: '#141920' } },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-      rightPriceScale: { borderColor: '#1C2128', autoScale: true, priceFormat: { type: 'price', precision: 8, minMove: 1e-8 } },
+      rightPriceScale: { borderColor: '#1C2128', autoScale: true, priceFormat: { type: 'custom', formatter: function(p) { return p.toFixed(18).replace(/0+$/, '').replace(/\.$/, ''); }, minMove: 1e-12 } },
       timeScale: { borderColor: '#1C2128', timeVisible: true, secondsVisible: false },
       handleScroll: { vertTouchDrag: false },
     });
