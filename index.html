@@ -931,10 +931,24 @@
       var d = klineData[i];
       var isHigh = d.high >= klineData[i-1].high && d.high >= klineData[i-2].high && d.high >= klineData[i-3].high &&
                    d.high >= klineData[i+1].high && d.high >= klineData[i+2].high && d.high >= klineData[i+3].high;
-      if (isHigh) highs.push({ time: d.time, value: d.high, idx: i });
+      if (isHigh) {
+        // Filter: remove if price crossed above this level after it formed
+        var touched = false;
+        for (var j = i + 1; j < klineData.length; j++) {
+          if (klineData[j].high >= d.high || klineData[j].close >= d.high) { touched = true; break; }
+        }
+        if (!touched) highs.push({ time: d.time, value: d.high, idx: i });
+      }
       var isLow = d.low <= klineData[i-1].low && d.low <= klineData[i-2].low && d.low <= klineData[i-3].low &&
                   d.low <= klineData[i+1].low && d.low <= klineData[i+2].low && d.low <= klineData[i+3].low;
-      if (isLow) lows.push({ time: d.time, value: d.low, idx: i });
+      if (isLow) {
+        // Filter: remove if price crossed below this level after it formed
+        var touchedL = false;
+        for (var k = i + 1; k < klineData.length; k++) {
+          if (klineData[k].low <= d.low || klineData[k].close <= d.low) { touchedL = true; break; }
+        }
+        if (!touchedL) lows.push({ time: d.time, value: d.low, idx: i });
+      }
     }
     return { highs: highs, lows: lows };
   }
