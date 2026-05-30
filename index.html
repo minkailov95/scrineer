@@ -696,8 +696,9 @@
       layout: { background: { type: 'solid', color: '#080B10' }, textColor: '#5C6570' },
       grid: { vertLines: { color: '#141920' }, horzLines: { color: '#141920' } },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-      rightPriceScale: { borderColor: '#1C2128', autoScale: true },
+      rightPriceScale: { borderColor: '#1C2128', autoScale: true, priceFormat: { type: 'custom', formatter: function(p) { return p.toString(); }, minMove: 1e-12 } },
       timeScale: { borderColor: '#1C2128', timeVisible: true, secondsVisible: false },
+      localization: { priceFormatter: function(p) { return p.toString(); } },
       handleScroll: { vertTouchDrag: false },
     });
 
@@ -705,11 +706,6 @@
       upColor: '#16C784', downColor: '#EA3943',
       borderDownColor: '#EA3943', borderUpColor: '#16C784',
       wickDownColor: '#EA3943', wickUpColor: '#16C784',
-    });
-
-    // Full price precision
-    chart.priceScale('right').applyOptions({
-      priceFormat: { type: 'custom', formatter: function(p) { return String(p); }, minMove: 1e-12 },
     });
 
     // Indicator series (hidden by default, created on demand)
