@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scrineer — Терминал</title>
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080B10; --surface: #0E1319; --surface2: #12161E;
+      --border: #1C2128; --borderLight: #252B33;
+      --text: #C8D0D8; --textDim: #5C6570; --textFaint: #3A424D;
+      --green: #16C784; --red: #EA3943; --gold: #F0B90B;
+      --greenBg: rgba(22,199,132,0.08); --redBg: rgba(234,57,67,0.08);
+      --orange: #F7931A; --purple: #7C3AED;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg); color: var(--text);
+      height: 100vh; overflow: hidden; font-size: 12px;
+      display: flex; flex-direction: column;
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .top-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 36px; padding: 0 12px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .nav-tabs { display: flex; gap: 2px; list-style: none; }
+    .nav-tab {
+      padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer;
+      color: var(--textDim); border-radius: 4px; transition: 0.15s;
+      white-space: nowrap; letter-spacing: 0.3px;
+    }
+    .nav-tab:hover { color: var(--text); background: var(--surface2); }
+    .nav-tab.active { color: var(--gold); background: rgba(240,185,11,0.06); }
+    .nav-right { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--textDim); }
+
+    .toolbar {
+      display: flex; align-items: center; height: 34px;
+      padding: 0 10px; gap: 3px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sym-display { font-weight: 700; font-size: 12px; color: var(--text); padding: 0 8px; font-family: 'JetBrains Mono'; }
+    .exch-badge { font-size: 10px; color: var(--textDim); background: var(--surface2); padding: 2px 6px; border-radius: 3px; }
+    .sep { width: 1px; height: 18px; background: var(--border); margin: 0 6px; }
+    .tf-btn {
+      padding: 3px 8px; font-size: 10px; font-weight: 600; cursor: pointer; border: none;
+      background: transparent; color: var(--textDim); border-radius: 3px; transition: 0.1s;
+      font-family: 'Inter', sans-serif; letter-spacing: 0.2px;
+    }
+    .tf-btn:hover { color: var(--text); background: var(--surface2); }
+    .tf-btn.active { color: var(--text); background: var(--border); }
+    .tb-btn {
+      padding: 3px 8px; font-size: 10px; cursor: pointer; border: none;
+      background: transparent; color: var(--textDim); border-radius: 3px; transition: 0.1s;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .tb-btn:hover { color: var(--text); background: var(--surface2); }
+    .tb-btn.active { color: var(--gold); background: rgba(240,185,11,0.08); }
+    .tb-ind {
+      padding: 3px 8px; font-size: 10px; border-radius: 3px;
+      background: rgba(124,58,237,0.10); color: var(--purple);
+      border: 1px solid rgba(124,58,237,0.18); cursor: pointer;
+    }
+    .tb-ind.active { background: rgba(240,185,11,0.10); color: var(--gold); border-color: rgba(240,185,11,0.18); }
+
+    .ind-dropdown { position: relative; }
+    .ind-menu {
+      position: absolute; top: 100%; left: 0; z-index: 50;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 4px 0; min-width: 160px;
+    }
+    .ind-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 10px; font-size: 11px; color: var(--text);
+      cursor: pointer; white-space: nowrap;
+    }
+    .ind-item:hover { background: var(--surface); }
+    .ind-item input { accent-color: var(--gold); }
+
+    .sort-header {
+      cursor: pointer; user-select: none;
+    }
+    .sort-header:hover { color: var(--text); }
+    .sort-header .sort-arrow { font-size: 8px; margin-left: 2px; }
+
+    .main { display: flex; flex: 1; min-height: 0; }
+
+    .draw-tools {
+      width: 42px; background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; align-items: center; padding: 6px 0; gap: 3px;
+      flex-shrink: 0;
+    }
+    .draw-btn {
+      width: 32px; height: 32px; border: none; background: transparent; cursor: pointer;
+      color: var(--textDim); border-radius: 6px; font-size: 14px;
+      display: flex; align-items: center; justify-content: center; transition: 0.1s;
+    }
+    .draw-btn:hover { color: var(--text); background: var(--surface2); }
+    .draw-btn.active { color: var(--gold); background: rgba(240,185,11,0.08); }
+
+    .chart-area { flex: 1; background: var(--bg); position: relative; min-width: 0; overflow: hidden; }
+    #chartContainer { width: 100%; height: 100%; }
+
+    .info-blocks {
+      position: absolute; bottom: 6px; left: 8px;
+      display: flex; gap: 4px; pointer-events: none;
+    }
+    .info-block {
+      padding: 4px 8px; border-radius: 4px; font-size: 10px;
+      background: rgba(8,11,16,0.85); border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .info-block .inf-label { color: var(--textDim); }
+    .info-block .inf-val { color: var(--text); font-weight: 700; font-family: 'JetBrains Mono'; }
+
+    .right-panel {
+      width: 300px; background: var(--surface); border-left: 1px solid var(--border);
+      display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden;
+    }
+    .rp-header {
+      padding: 8px 10px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 10px; color: var(--textDim); letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .rp-search {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 3px;
+      padding: 3px 8px; font-size: 10px; color: var(--text); width: 100px; outline: none;
+    }
+    .rp-search:focus { border-color: var(--gold); }
+    .rp-table-wrap { flex: 1; overflow-y: auto; }
+    .rp-table {
+      width: 100%; border-collapse: collapse; font-size: 10px;
+      table-layout: fixed;
+    }
+    .rp-table thead { position: sticky; top: 0; z-index: 2; }
+    .rp-table th {
+      background: var(--surface); padding: 5px 6px; text-align: right;
+      font-weight: 500; color: var(--textDim); border-bottom: 1px solid var(--border);
+      font-size: 9px; letter-spacing: 0.3px; text-transform: uppercase;
+    }
+    .rp-table th:first-child { text-align: left; padding-left: 10px; width: 35%; }
+    .rp-table th:nth-child(2) { width: 22%; }
+    .rp-table th:nth-child(3) { width: 22%; }
+    .rp-table th:last-child { padding-right: 10px; width: 21%; }
+    .rp-table td {
+      padding: 4px 6px; text-align: right; border-bottom: 1px solid rgba(28,33,40,0.5);
+      font-family: 'JetBrains Mono', monospace; font-size: 10px; white-space: nowrap;
+    }
+    .rp-table td:first-child { text-align: left; font-weight: 600; color: var(--text); padding-left: 10px; font-family: 'Inter', sans-serif; }
+    .rp-table td:last-child { padding-right: 10px; }
+    .rp-table tbody tr { cursor: pointer; transition: 0.08s; }
+    .rp-table tbody tr:hover { background: var(--surface2); }
+    .rp-table tbody tr.active { background: rgba(240,185,11,0.04); }
+    .rp-table tbody tr.active td:first-child { color: var(--gold); }
+    .text-g { color: var(--green); }
+    .text-r { color: var(--red); }
+    .text-o { color: var(--orange); }
+
+    .status-bar {
+      height: 24px; background: var(--surface); border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 10px; font-size: 10px; color: var(--textDim);
+      flex-shrink: 0;
+    }
+    .status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 5px; }
+    .status-dot.off { background: var(--red); }
+
+    .crosshair-info {
+      position: absolute; top: 6px; right: 10px;
+      padding: 4px 8px; border-radius: 4px; font-size: 10px;
+      background: rgba(8,11,16,0.9); border: 1px solid var(--border);
+      font-family: 'JetBrains Mono'; pointer-events: none; z-index: 5;
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .right-panel { display: none; }
+      .draw-tools { width: 32px; }
+      .nav-tabs { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <ul class="nav-tabs">
+    <li class="nav-tab">СКРИНЕР</li>
+    <li class="nav-tab">ПЛОТНОСТИ</li>
+    <li class="nav-tab">СТАКАН</li>
+    <li class="nav-tab">ТРЕНД</li>
+    <li class="nav-tab active">МОНЕТЫ</li>
+    <li class="nav-tab">ОПОВЕЩЕНИЯ</li>
+    <li class="nav-tab">ИЗБРАННОЕ</li>
+  </ul>
+  <div class="nav-right"><span style="color:var(--text);font-weight:600;" id="navSym">Загрузка...</span> &bull; LIVE</div>
+</nav>
+
+<div class="toolbar">
+  <span class="sym-display" id="symDisplay">Загрузка...</span>
+  <span class="exch-badge">BINANCE</span>
+  <span class="sep"></span>
+  <span style="font-size:16px;font-weight:700;font-family:'JetBrains Mono';padding:0 6px;" id="currentPriceLabel">—</span>
+  <span class="sep"></span>
+  <button class="tf-btn">1м</button>
+  <button class="tf-btn">5м</button>
+  <button class="tf-btn">15м</button>
+  <button class="tf-btn">30м</button>
+  <button class="tf-btn">1ч</button>
+  <button class="tf-btn">2ч</button>
+  <button class="tf-btn">4ч</button>
+  <button class="tf-btn" style="background:var(--border);color:var(--text);">1д</button>
+  <button class="tf-btn">1н</button>
+  <button class="tf-btn">1М</button>
+  <span class="sep"></span>
+  <div class="ind-dropdown" id="indDropdown">
+    <button class="tb-ind" id="indBtn">⚙ Индикаторы ▾</button>
+    <div class="ind-menu" id="indMenu" style="display:none;">
+      <label class="ind-item"><input type="checkbox" id="indBB" checked> Bollinger Bands</label>
+      <label class="ind-item"><input type="checkbox" id="indSMA" checked> SMA 20</label>
+      <label class="ind-item"><input type="checkbox" id="indRSI"> RSI 14</label>
+    </div>
+  </div>
+  <span style="margin-left:auto;color:var(--textDim);font-size:10px;" id="ohlcInfo">O: — H: — L: — C: —</span>
+</div>
+
+<div class="main">
+  <div class="draw-tools">
+    <button class="draw-btn" title="Курсор" id="drawCursor">🖱</button>
+    <button class="draw-btn" title="Линия" id="drawLine">╱</button>
+    <button class="draw-btn" title="Гориз. линия" id="drawHLine">—</button>
+    <button class="draw-btn" title="Луч" id="drawRay">→</button>
+    <button class="draw-btn" title="Прямоугольник" id="drawRect">▭</button>
+    <button class="draw-btn" title="Текст" id="drawText">T</button>
+    <button class="draw-btn" title="Кисть" id="drawBrush">🖌</button>
+    <button class="draw-btn" title="Ластик" id="drawEraser">⌫</button>
+    <button class="draw-btn" title="Магнит" id="drawMagnet" style="margin-top:auto;color:var(--purple);">🧲</button>
+  </div>
+
+  <div class="chart-area" id="chartArea">
+    <div id="chartContainer"></div>
+    <div class="info-blocks" id="infoBlocks">
+      <div class="info-block"><span class="inf-label">[24ч] Об:</span><span class="inf-val" id="infoVol">—</span></div>
+      <div class="info-block"><span class="inf-label">Изм:</span><span class="inf-val" id="infoChg">—</span></div>
+      <div class="info-block"><span class="inf-label">N [5м/14]:</span><span class="inf-val" id="infoNatr">—</span></div>
+      <div class="info-block"><span class="inf-label">OI Δ5м:</span><span class="inf-val" id="infoOI">—</span></div>
+      <div class="info-block"><span class="inf-label">Спред:</span><span class="inf-val" id="infoSpread">—</span></div>
+    </div>
+    <div class="crosshair-info" id="crosshairInfo"></div>
+  </div>
+
+  <div class="right-panel">
+    <div class="rp-header">
+      <span>МОНЕТА</span>
+      <input class="rp-search" placeholder="Поиск..." value="USDT" id="coinSearch">
+    </div>
+    <div class="rp-table-wrap">
+      <table class="rp-table">
+        <thead>
+          <tr>
+            <th class="sort-header" data-sort="name">МОНЕТА <span class="sort-arrow">▾</span></th>
+            <th class="sort-header" data-sort="natr">N5/14 <span class="sort-arrow">▾</span></th>
+            <th class="sort-header" data-sort="ch24">CH24h <span class="sort-arrow">▾</span></th>
+            <th>OI5m</th>
+          </tr>
+        </thead>
+        <tbody id="coinBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span><span class="status-dot" id="statusDot"></span><span id="statusText">Подключение...</span></span>
+  <span>Последнее обновление: <span id="updateTime">—</span></span>
+  <span>Scrineer</span>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // CONSTANTS
+  // ============================================================
+  var BINANCE_REST = 'https://fapi.binance.com';
+  var BINANCE_WS = 'wss://fstream.binance.com/stream?streams=';
+  var BINANCE_WS_SINGLE = 'wss://fstream.binance.com/ws/';
+
+  // ============================================================
+  // DOM REFS
+  // ============================================================
+  var $ = function(id) { return document.getElementById(id); };
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  var activeCoin = 'BTCUSDT';
+  var activeInterval = '1d';
+  var klineData = [];
+  var tickersData = [];
+  var natrData = {};
+  var coinPrices = {};
+  var changes24h = {};
+  var priceDecimals = 2;
+  var priceWS = null;
+  var klineWS = null;
+  var showBB = true, showSMA = true, showRSI = false;
+  var drawMode = 'cursor';
+  var magnetActive = false;
+  var rulers = [];
+  var hLines = [];
+  var pendingRuler = null;
+  var sortColumn = 'natr';
+  var sortDirection = 'desc';
+  var allSymbols = [];
+  var chart = null;
+  var candleSeries = null;
+  var bbUpperSeries = null, bbMidSeries = null, bbLowerSeries = null;
+  var smaSeries = null, rsiSeries = null;
+  var chartReady = false;
+
+  // ============================================================
+  // CHART COLORS
+  // ============================================================
+  var C = {
+    bg: '#080B10', grid: '#141920', gridX: '#1A1F29',
+    candleUp: '#16C784', candleDown: '#EA3943',
+    wickUp: '#16C784', wickDown: '#EA3943',
+    volUp: 'rgba(22,199,132,0.18)', volDown: 'rgba(234,57,67,0.18)',
+    text: '#5C6570', textBright: '#C8D0D8',
+    gold: '#F0B90B', purple: '#7C3AED', orange: '#F7931A',
+    bbFill: 'rgba(124,58,237,0.06)',
+    bbUpper: 'rgba(124,58,237,0.7)', bbMid: 'rgba(124,58,237,0.9)', bbLower: 'rgba(124,58,237,0.7)',
+    sma: '#F0B90B',
+    rsi: '#58a6ff'
+  };
+
+  // ============================================================
+  // UTILS
+  // ============================================================
+  function fmtPrice(sym, p) { var d = 2; if (p < 0.01) d = 6; else if (p < 1) d = 4; else if (p < 100) d = 3; return p.toFixed(d); }
+  function getDec(sym) { var p = coinPrices[sym]; if (!p) return 4; if (p < 0.01) return 6; if (p < 1) return 4; if (p < 100) return 3; return 2; }
+
+  // ============================================================
+  // API FUNCTIONS
+  // ============================================================
+  async function fetchKlines(sym, interval, limit) {
+    limit = limit || 200;
+    var r = await fetch(BINANCE_REST + '/fapi/v1/klines?symbol=' + sym + '&interval=' + interval + '&limit=' + limit);
+    var data = await r.json();
+    return data.map(function(k, i) {
+      return { time: Math.floor(k[0] / 1000), open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] };
+    });
+  }
+
+  async function fetch24hrTicker(sym) {
+    var r = await fetch(BINANCE_REST + '/fapi/v1/ticker/24hr?symbol=' + sym);
+    return await r.json();
+  }
+
+  async function fetchAllTickers() {
+    var r = await fetch(BINANCE_REST + '/fapi/v1/ticker/24hr');
+    var data = await r.json();
+    // Filter to only USDT perpetual contracts we know about
+    var validSet = {};
+    allSymbols.forEach(function(s) { validSet[s] = true; });
+    tickersData = data
+      .filter(function(t) { return validSet[t.symbol]; })
+      .map(function(t) {
+        var sym = t.symbol;
+        coinPrices[sym] = +t.lastPrice;
+        changes24h[sym] = +t.priceChangePercent;
+        return { s: sym.replace('USDT', ''), symbol: sym, c: +t.lastPrice, ch: +t.priceChangePercent, v: +t.quoteVolume };
+      });
+    return tickersData;
+  }
+
+  async function fetchExchangeInfo() {
+    var r = await fetch(BINANCE_REST + '/fapi/v1/exchangeInfo');
+    var data = await r.json();
+    return data.symbols
+      .filter(function(s) { return s.quoteAsset === 'USDT' && s.status === 'TRADING' && s.contractType === 'PERPETUAL'; })
+      .map(function(s) { return s.symbol; });
+  }
+
+  // ============================================================
+  // INDICATORS
+  // ============================================================
+  function calcSMA(data, period) {
+    var out = [];
+    for (var i = 0; i < data.length; i++) {
+      if (i < period - 1) { out.push(null); continue; }
+      var sum = 0;
+      for (var j = i - period + 1; j <= i; j++) sum += data[j].close;
+      out.push({ time: data[i].time, index: i, value: sum / period });
+    }
+    return out.filter(function(d) { return d !== null; });
+  }
+
+  function calcBB(data, period, mult) {
+    period = period || 20; mult = mult || 2;
+    var sma = calcSMA(data, period);
+    var out = [];
+    for (var i = 0; i < sma.length; i++) {
+      var d = sma[i];
+      var idx = d.index;
+      var start = Math.max(0, idx - period + 1);
+      var end = idx + 1;
+      var mean = d.value;
+      var variance = 0;
+      for (var j = start; j < end; j++) variance += Math.pow(data[j].close - mean, 2);
+      variance /= (end - start);
+      var std = Math.sqrt(variance);
+      out.push({ time: d.time, index: idx, upper: mean + mult * std, mid: mean, lower: mean - mult * std });
+    }
+    return out;
+  }
+
+  function calcRSI(data, period) {
+    period = period || 14;
+    var out = [];
+    var gains = 0, losses = 0;
+    for (var i = 1; i < data.length; i++) {
+      var diff = data[i].close - data[i - 1].close;
+      if (diff >= 0) gains += diff; else losses -= diff;
+      if (i >= period) {
+        var ag = gains / period, al = losses / period;
+        var rsi = al === 0 ? 100 : 100 - 100 / (1 + ag / al);
+        out.push({ time: data[i].time, index: i, value: rsi });
+        gains *= (period - 1) / period;
+        losses *= (period - 1) / period;
+      }
+    }
+    return out;
+  }
+
+  function calcNATR(klines, atrPeriod, nPeriod) {
+    atrPeriod = atrPeriod || 5; nPeriod = nPeriod || 14;
+    if (klines.length < nPeriod + 1) return -1;
+    var trSum = 0;
+    for (var i = klines.length - nPeriod; i < klines.length; i++) {
+      var h = klines[i].high, l = klines[i].low, pc = klines[i - 1].close;
+      var tr = Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
+      trSum += tr;
+    }
+    var atr = trSum / nPeriod;
+    var close = klines[klines.length - 1].close;
+    return (atr / close) * 100;
+  }
+
+  // ============================================================
+  // WEBSOCKET
+  // ============================================================
+  function connectPriceWS() {
+    if (priceWS) { try { priceWS.close(); } catch(e) {} }
+    priceWS = new WebSocket(BINANCE_WS + '!miniTicker@arr');
+    priceWS.onopen = function() {
+      $('statusDot').className = 'status-dot';
+      $('statusText').textContent = 'Binance WebSocket · ' + (activeCoin || '');
+    };
+    priceWS.onmessage = function(e) {
+      try {
+        var msg = JSON.parse(e.data);
+        if (!msg.data || !Array.isArray(msg.data)) return;
+        msg.data.forEach(function(t) {
+          var sym = t.s, p = parseFloat(t.c), o = parseFloat(t.o);
+          coinPrices[sym] = p;
+          if (o > 0) changes24h[sym] = ((p - o) / o * 100);
+          if (sym === activeCoin) updatePriceFromTicker(p);
+        });
+        renderCoinTable();
+      } catch(err) {}
+    };
+    priceWS.onclose = function() {
+      $('statusDot').className = 'status-dot off';
+      $('statusText').textContent = 'Переподключение...';
+      setTimeout(connectPriceWS, 3000);
+    };
+    priceWS.onerror = function() {
+      $('statusDot').className = 'status-dot off';
+    };
+  }
+
+  function updatePriceFromTicker(p) {
+    if (!activeCoin || klineData.length === 0) return;
+    coinPrices[activeCoin] = p;
+    var last = klineData[klineData.length - 1];
+    last.close = p;
+    if (p > last.high) last.high = p;
+    if (p < last.low) last.low = p;
+    updateInfoBlocks();
+    if (candleSeries) {
+      try { candleSeries.update(last); } catch(ex) {}
+    }
+  }
+
+  function connectKlineWS() {
+    if (klineWS) { try { klineWS.close(); } catch(e) {} }
+    if (!activeCoin) return;
+    klineWS = new WebSocket(BINANCE_WS_SINGLE + activeCoin.toLowerCase() + '@kline_' + activeInterval);
+    klineWS.onmessage = function(e) {
+      try {
+        var msg = JSON.parse(e.data);
+        if (!msg.k) return;
+        var k = msg.k, t = Math.floor(k.t / 1000);
+        if (klineData.length === 0) return;
+        var last = klineData[klineData.length - 1];
+        if (k.x) {
+          klineData.push({ time: t, open: +k.o, high: +k.h, low: +k.l, close: +k.c, volume: +k.v });
+          if (klineData.length > 500) klineData.shift();
+          if (candleSeries) candleSeries.setData(klineData);
+        } else {
+          last.close = +k.c;
+          if (+k.h > last.high) last.high = +k.h;
+          if (+k.l < last.low) last.low = +k.l;
+          if (candleSeries) {
+            try { candleSeries.update(last); } catch(ex) {}
+          }
+        }
+        coinPrices[activeCoin] = last.close;
+        updateIndicators();
+        updateInfoBlocks();
+      } catch(err) {}
+    };
+    klineWS.onclose = function() { if (activeCoin) setTimeout(connectKlineWS, 3000); };
+  }
+
+  // ============================================================
+  // NATR LOADING
+  // ============================================================
+  var natrLoading = false;
+  async function loadNATRForSymbol(sym) {
+    try {
+      var r = await fetch(BINANCE_REST + '/fapi/v1/klines?symbol=' + sym + '&interval=5m&limit=30');
+      var raw = await r.json();
+      if (!Array.isArray(raw) || raw.length < 15) { natrData[sym] = -1; return; }
+      var kls = raw.map(function(d) { return { time: d[0], open: +d[1], high: +d[2], low: +d[3], close: +d[4] }; });
+      natrData[sym] = calcNATR(kls, 5, 14);
+    } catch(e) { natrData[sym] = -1; }
+  }
+
+  async function loadAllNATR() {
+    if (natrLoading) return;
+    natrLoading = true;
+    var syms = tickersData.map(function(t) { return t.symbol; });
+    // Load in batches of 5
+    for (var i = 0; i < syms.length; i += 5) {
+      var batch = syms.slice(i, i + 5);
+      await Promise.all(batch.map(loadNATRForSymbol));
+      renderCoinTable();
+    }
+    natrLoading = false;
+  }
+
+  // ============================================================
+  // RENDER COIN TABLE (Right Panel)
+  // ============================================================
+  function renderCoinTable() {
+    var searchQ = ($('coinSearch').value || '').toLowerCase();
+    var searchTerm = searchQ ? searchQ.replace('usdt', '') : '';
+
+    var list = tickersData.filter(function(t) {
+      if (!searchTerm) return true;
+      return t.s.toLowerCase().indexOf(searchTerm) !== -1;
+    });
+
+    // Sort
+    list.sort(function(a, b) {
+      var vA, vB;
+      if (sortColumn === 'name') {
+        vA = a.s; vB = b.s;
+        if (sortDirection === 'asc') return vA.localeCompare(vB);
+        return vB.localeCompare(vA);
+      } else if (sortColumn === 'ch24') {
+        vA = changes24h[a.symbol] != null ? changes24h[a.symbol] : a.ch;
+        vB = changes24h[b.symbol] != null ? changes24h[b.symbol] : b.ch;
+      } else {
+        // natr (default)
+        vA = natrData[a.symbol] != null ? natrData[a.symbol] : -1;
+        vB = natrData[b.symbol] != null ? natrData[b.symbol] : -1;
+      }
+      if (sortDirection === 'asc') return vA - vB;
+      return vB - vA;
+    });
+
+    var tbody = $('coinBody');
+    tbody.innerHTML = list.map(function(t) {
+      var natr = natrData[t.symbol] != null ? natrData[t.symbol] : -1;
+      var natrStr = natr >= 0 ? natr.toFixed(2) : '...';
+      var natrClass = natr > 4 ? 'text-o' : '';
+      var ch = changes24h[t.symbol] != null ? changes24h[t.symbol] : t.ch;
+      var chStr = ch != null ? ((ch >= 0 ? '+' : '') + ch.toFixed(2) + '%') : '...';
+      var chClass = ch >= 0 ? 'text-g' : 'text-r';
+      var activeClass = t.symbol === activeCoin ? ' class="active"' : '';
+
+      return '<tr' + activeClass + ' data-sym="' + t.symbol + '">' +
+        '<td>' + t.s + ' <span style="font-size:8px;color:var(--textFaint);">USDT</span></td>' +
+        '<td class="' + natrClass + '">' + natrStr + '</td>' +
+        '<td class="' + chClass + '">' + chStr + '</td>' +
+        '<td style="color:var(--textDim);">—</td>' +
+        '</tr>';
+    }).join('');
+
+    // Click handlers
+    tbody.querySelectorAll('tr').forEach(function(row) {
+      row.addEventListener('click', async function() {
+        activeCoin = row.dataset.sym;
+        $('symDisplay').textContent = activeCoin;
+        $('navSym').textContent = activeCoin;
+        tbody.querySelectorAll('tr').forEach(function(r) { r.classList.remove('active'); });
+        row.classList.add('active');
+        rulers = []; hLines = []; pendingRuler = null;
+        await loadChartData();
+        connectKlineWS();
+        updateInfoBlocks();
+      });
+    });
+  }
+
+  $('coinSearch').addEventListener('input', renderCoinTable);
+
+  // Sort headers
+  document.querySelectorAll('.sort-header').forEach(function(th) {
+    th.addEventListener('click', function() {
+      var col = th.dataset.sort;
+      if (sortColumn === col) {
+        sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+      } else {
+        sortColumn = col;
+        sortDirection = col === 'name' ? 'asc' : 'desc';
+      }
+      renderCoinTable();
+    });
+  });
+
+  // ============================================================
+  // INFO BLOCKS
+  // ============================================================
+  async function updateInfoBlocks() {
+    try {
+      var t = await fetch24hrTicker(activeCoin);
+      var v = +t.quoteVolume;
+      $('infoVol').textContent = v > 1e9 ? '$' + (v / 1e9).toFixed(1) + 'B' : '$' + (v / 1e6).toFixed(0) + 'M';
+      var ch = +t.priceChangePercent;
+      var chEl = $('infoChg');
+      chEl.textContent = ch >= 0 ? '+' + ch.toFixed(2) + '%' : ch.toFixed(2) + '%';
+      chEl.style.color = ch >= 0 ? C.candleUp : C.candleDown;
+      $('currentPriceLabel').textContent = '$' + fmtPrice(activeCoin, parseFloat(t.lastPrice));
+      $('currentPriceLabel').style.color = ch >= 0 ? C.candleUp : C.candleDown;
+    } catch(e) {}
+
+    // NATR for current coin
+    var natr = natrData[activeCoin];
+    $('infoNatr').textContent = natr != null && natr >= 0 ? natr.toFixed(2) : '...';
+
+    // Spread (bid/ask) - try to get from bookTicker
+    try {
+      var r = await fetch(BINANCE_REST + '/fapi/v1/ticker/bookTicker?symbol=' + activeCoin);
+      var bt = await r.json();
+      var spread = ((+bt.askPrice - +bt.bidPrice) / +bt.askPrice * 100);
+      $('infoSpread').textContent = spread.toFixed(4) + '%';
+    } catch(e) { $('infoSpread').textContent = '—'; }
+
+    $('infoOI').textContent = '—';
+    $('updateTime').textContent = new Date().toLocaleTimeString();
+    priceDecimals = getDec(activeCoin);
+  }
+
+  // ============================================================
+  // CHART ENGINE (Lightweight Charts)
+  // ============================================================
+  function initChart() {
+    if (chart) {
+      try { chart.remove(); } catch(e) {}
+    }
+    var container = $('chartContainer');
+    var r = container.getBoundingClientRect();
+    if (r.width === 0) {
+      setTimeout(initChart, 100);
+      return;
+    }
+
+    chart = LightweightCharts.createChart(container, {
+      layout: { background: { type: 'solid', color: '#080B10' }, textColor: '#5C6570' },
+      grid: { vertLines: { color: '#141920' }, horzLines: { color: '#141920' } },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      rightPriceScale: { borderColor: '#1C2128', autoScale: true },
+      timeScale: { borderColor: '#1C2128', timeVisible: true, secondsVisible: false },
+      handleScroll: { vertTouchDrag: false },
+    });
+
+    candleSeries = chart.addCandlestickSeries({
+      upColor: '#16C784', downColor: '#EA3943',
+      borderDownColor: '#EA3943', borderUpColor: '#16C784',
+      wickDownColor: '#EA3943', wickUpColor: '#16C784',
+    });
+
+    // Indicator series (hidden by default, created on demand)
+    smaSeries = chart.addLineSeries({ color: '#F0B90B', lineWidth: 1, priceScaleId: 'right', lastValueVisible: true });
+    bbUpperSeries = chart.addLineSeries({ color: 'rgba(124,58,237,0.7)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, priceScaleId: 'right' });
+    bbMidSeries = chart.addLineSeries({ color: 'rgba(124,58,237,0.9)', lineWidth: 1, priceScaleId: 'right' });
+    bbLowerSeries = chart.addLineSeries({ color: 'rgba(124,58,237,0.7)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, priceScaleId: 'right' });
+    rsiSeries = chart.addLineSeries({ color: '#58a6ff', lineWidth: 1, priceScaleId: 'rsi', lastValueVisible: true });
+
+    // RSI pane
+    chart.priceScale('rsi').applyOptions({
+      scaleMargins: { top: 0.85, bottom: 0 },
+      visible: false,
+    });
+
+    // Crosshair - show OHLC
+    chart.subscribeCrosshairMove(function(param) {
+      if (!param.time || !param.seriesData || param.point === undefined) return;
+      var d = param.seriesData.get(candleSeries);
+      if (!d) return;
+      $('ohlcInfo').textContent = 'O: ' + d.open.toFixed(priceDecimals) + ' H: ' + d.high.toFixed(priceDecimals) + ' L: ' + d.low.toFixed(priceDecimals) + ' C: ' + d.close.toFixed(priceDecimals);
+      var crossInfoEl = $('crosshairInfo');
+      crossInfoEl.style.display = 'block';
+      var date = new Date(d.time * 1000);
+      crossInfoEl.textContent = date.getDate() + '/' + (date.getMonth() + 1) + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0') + ' | ' + d.close.toFixed(priceDecimals);
+    });
+
+    // Click for drawing tools
+    chart.subscribeClick(function(param) {
+      if (!param.time || param.point === undefined) return;
+      handleChartClick(param);
+    });
+
+    window.addEventListener('resize', function() {
+      if (chart && container) {
+        var rr = container.getBoundingClientRect();
+        chart.resize(rr.width, rr.height);
+      }
+    });
+
+    chartReady = true;
+    indicatorsApplyVisibility();
+    setChartData();
+  }
+
+  function setChartData() {
+    if (!chartReady || !candleSeries || klineData.length === 0) return;
+    candleSeries.setData(klineData);
+    chart.timeScale().fitContent();
+    updateIndicators();
+  }
+
+  function updateIndicators() {
+    if (!chartReady) return;
+    // SMA
+    if (showSMA && klineData.length >= 20) {
+      var smaData = calcSMA(klineData, 20);
+      smaSeries.setData(smaData.map(function(d) { return { time: d.time, value: d.value }; }));
+    } else {
+      smaSeries.setData([]);
+    }
+    // BB
+    if (showBB && klineData.length >= 20) {
+      var bb = calcBB(klineData, 20, 2);
+      bbUpperSeries.setData(bb.map(function(d) { return { time: d.time, value: d.upper }; }));
+      bbMidSeries.setData(bb.map(function(d) { return { time: d.time, value: d.mid }; }));
+      bbLowerSeries.setData(bb.map(function(d) { return { time: d.time, value: d.lower }; }));
+    } else {
+      bbUpperSeries.setData([]); bbMidSeries.setData([]); bbLowerSeries.setData([]);
+    }
+    // RSI
+    if (showRSI && klineData.length >= 14) {
+      var rsiData = calcRSI(klineData, 14);
+      rsiSeries.setData(rsiData.map(function(d) { return { time: d.time, value: d.value }; }));
+    } else {
+      rsiSeries.setData([]);
+    }
+  }
+
+  function indicatorsApplyVisibility() {
+    if (!chart) return;
+    smaSeries.applyOptions({ visible: showSMA });
+    bbUpperSeries.applyOptions({ visible: showBB });
+    bbMidSeries.applyOptions({ visible: showBB });
+    bbLowerSeries.applyOptions({ visible: showBB });
+    rsiSeries.applyOptions({ visible: showRSI });
+    chart.priceScale('rsi').applyOptions({ visible: showRSI });
+    updateIndicators();
+  }
+
+  function renderChart() {
+    if (!chartReady) return;
+    setChartData();
+  }
+
+  // ============================================================
+  // DRAWING TOOLS
+  // ============================================================
+  var priceLines = [];
+
+  function clearPriceLines() {
+    priceLines.forEach(function(pl) {
+      try { candleSeries.removePriceLine(pl); } catch(e) {}
+    });
+    priceLines = [];
+  }
+
+  function addPriceLine(price, color, title) {
+    if (!candleSeries) return;
+    var pl = candleSeries.createPriceLine({
+      price: price, color: color || C.purple,
+      lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true, title: title || price.toFixed(priceDecimals || 2),
+    });
+    priceLines.push(pl);
+    return pl;
+  }
+
+  function handleChartClick(param) {
+    var d = param.seriesData.get(candleSeries);
+    if (!d) return;
+
+    var time = param.time;
+    var price = d.close;
+
+    // Magnet snap
+    if (magnetActive && drawMode !== 'cursor') {
+      var ohlc = [d.open, d.high, d.low, d.close];
+      var best = ohlc[0], bestDist = Math.abs(ohlc[0] - price);
+      for (var k = 1; k < ohlc.length; k++) {
+        var dist = Math.abs(ohlc[k] - price);
+        if (dist < bestDist) { bestDist = dist; best = ohlc[k]; }
+      }
+      price = best;
+    }
+
+    if (drawMode === 'hline') {
+      addPriceLine(price, C.purple, fmtPrice(activeCoin, price));
+      return;
+    }
+
+    if (drawMode === 'ray') {
+      if (!pendingRuler) {
+        pendingRuler = { price1: price, time1: time };
+        addPriceLine(price, C.orange, 'A: ' + fmtPrice(activeCoin, price));
+      } else {
+        var pct = ((price - pendingRuler.price1) / pendingRuler.price1 * 100);
+        rulers.push({ price1: pendingRuler.price1, price2: price, pct: pct });
+        addPriceLine(price, C.orange, 'B: ' + fmtPrice(activeCoin, price) + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)');
+        pendingRuler = null;
+      }
+      return;
+    }
+
+    if (drawMode === 'cursor' && !pendingRuler) {
+      pendingRuler = { price1: price, time1: time };
+      addPriceLine(price, C.orange, 'A: ' + fmtPrice(activeCoin, price));
+    } else if (pendingRuler && drawMode === 'cursor') {
+      var pct2 = ((price - pendingRuler.price1) / pendingRuler.price1 * 100);
+      rulers.push({ price1: pendingRuler.price1, price2: price, pct: pct2 });
+      addPriceLine(price, C.orange, 'B: ' + fmtPrice(activeCoin, price) + ' (' + (pct2 >= 0 ? '+' : '') + pct2.toFixed(2) + '%)');
+      pendingRuler = null;
+    }
+  }
+
+  // ============================================================
+  // DRAW MODE BUTTONS
+  // ============================================================
+  function setDrawMode(mode) {
+    drawMode = mode;
+    pendingRuler = null;
+    document.querySelectorAll('.draw-btn').forEach(function(b) { b.classList.remove('active'); });
+    var btnId = 'draw' + mode.charAt(0).toUpperCase() + mode.slice(1);
+    var btnEl = $(btnId);
+    if (btnEl) btnEl.classList.add('active');
+  }
+
+  $('drawCursor').addEventListener('click', function() { setDrawMode('cursor'); });
+  $('drawLine').addEventListener('click', function() { setDrawMode('line'); });
+  $('drawHLine').addEventListener('click', function() { setDrawMode('hline'); });
+  $('drawRay').addEventListener('click', function() { setDrawMode('ray'); });
+  $('drawRect').addEventListener('click', function() { setDrawMode('rect'); });
+  $('drawMagnet').addEventListener('click', function() {
+    magnetActive = !magnetActive;
+    $('drawMagnet').classList.toggle('active', magnetActive);
+    if (magnetActive) $('drawMagnet').style.color = C.gold;
+    else $('drawMagnet').style.color = C.purple;
+  });
+
+  $('drawEraser').addEventListener('click', function() {
+    rulers = [];
+    hLines = [];
+    pendingRuler = null;
+    clearPriceLines();
+  });
+
+  // ============================================================
+  // INDICATOR TOGGLES (dropdown)
+  // ============================================================
+  $('indBtn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    var menu = $('indMenu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  });
+  document.addEventListener('click', function() {
+    $('indMenu').style.display = 'none';
+  });
+  $('indMenu').addEventListener('click', function(e) { e.stopPropagation(); });
+  $('indBB').addEventListener('change', function() {
+    showBB = this.checked;
+    indicatorsApplyVisibility();
+  });
+  $('indSMA').addEventListener('change', function() {
+    showSMA = this.checked;
+    indicatorsApplyVisibility();
+  });
+  $('indRSI').addEventListener('change', function() {
+    showRSI = this.checked;
+    indicatorsApplyVisibility();
+  });
+
+  // ============================================================
+  // TIMEFRAME BUTTONS
+  // ============================================================
+  var tfMap = { '1м': '1m', '5м': '5m', '15м': '15m', '30м': '30m', '1ч': '1h', '2ч': '2h', '4ч': '4h', '1д': '1d', '1н': '1w', '1М': '1M' };
+  document.querySelectorAll('.tf-btn').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+      document.querySelectorAll('.tf-btn').forEach(function(b) { b.classList.remove('active'); b.style.background = 'transparent'; b.style.color = ''; });
+      btn.classList.add('active');
+      btn.style.background = '';
+      btn.style.color = '';
+      // Highlight 1д
+      var tf = tfMap[btn.textContent.trim()] || '1d';
+      if (tf === '1d') { btn.style.background = 'var(--border)'; btn.style.color = 'var(--text)'; }
+      activeInterval = tf;
+      rulers = []; hLines = []; pendingRuler = null;
+      await loadChartData();
+      connectKlineWS();
+    });
+  });
+  // Initial 1д highlight
+  document.querySelectorAll('.tf-btn').forEach(function(b) {
+    if (b.textContent.trim() === '1д') {
+      b.classList.add('active');
+      b.style.background = 'var(--border)';
+      b.style.color = 'var(--text)';
+    }
+  });
+
+  // ============================================================
+  // LOAD CHART DATA
+  // ============================================================
+  async function loadChartData() {
+    try {
+      $('statusText').textContent = 'Загрузка ' + activeCoin + ' ' + activeInterval + '...';
+      klineData = await fetchKlines(activeCoin, activeInterval, 200);
+      coinPrices[activeCoin] = klineData.length > 0 ? klineData[klineData.length - 1].close : null;
+      $('symDisplay').textContent = activeCoin;
+      $('navSym').textContent = activeCoin;
+      $('statusText').textContent = 'Binance · ' + activeCoin + ' · ' + klineData.length + ' св.';
+      priceDecimals = getDec(activeCoin);
+      clearPriceLines();
+      rulers = []; hLines = []; pendingRuler = null;
+      if (chartReady) {
+        setChartData();
+      } else {
+        initChart();
+      }
+      updateInfoBlocks();
+    } catch(e) {
+      $('statusText').textContent = 'Ошибка: ' + e.message;
+    }
+  }
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  async function init() {
+    $('statusText').textContent = 'Загрузка списка монет...';
+
+    // 1. Load all symbols from exchangeInfo
+    try {
+      allSymbols = await fetchExchangeInfo();
+      $('statusText').textContent = 'Загружено ' + allSymbols.length + ' инструментов';
+    } catch(e) {
+      allSymbols = [];
+    }
+
+    // 2. Load all tickers
+    try {
+      tickersData = await fetchAllTickers();
+      $('statusText').textContent = 'Тикеры: ' + tickersData.length + ' монет';
+      activeCoin = tickersData.length > 0 ? tickersData[0].symbol : 'BTCUSDT';
+    } catch(e) {
+      tickersData = [];
+      activeCoin = 'BTCUSDT';
+    }
+
+    $('symDisplay').textContent = activeCoin;
+    $('navSym').textContent = activeCoin;
+
+    // 3. Load chart
+    await loadChartData();
+
+    // 4. Connect WebSocket
+    connectPriceWS();
+    connectKlineWS();
+
+    // 5. Load NATR in background for ALL coins
+    loadAllNATR();
+
+    // 6. Render coin table
+    renderCoinTable();
+
+    // Auto-refresh tickers every 30s
+    setInterval(async function() {
+      try {
+        await fetchAllTickers();
+        renderCoinTable();
+        if (!natrLoading) loadAllNATR();
+      } catch(e) {}
+    }, 30000);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

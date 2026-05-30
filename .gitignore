@@ -1,0 +1,20 @@
+# Server logs
+server.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temp
+*.swp
+*.swo
+*~

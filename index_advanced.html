@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Binance Sniper Terminal v5.5 (Range Edition)</title>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        :root { --bg: #0b0e11; --side: #161a1e; --accent: #fcd535; --brd: #2b3139; --text: #848e9c; }
+        body { background: var(--bg); color: #eaecef; font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        .sidebar { width: 360px; background: var(--side); border-right: 1px solid var(--brd); display: flex; flex-direction: column; }
+        .filter-panel { padding: 8px; background: #1e2329; border-bottom: 1px solid var(--brd); display: flex; justify-content: space-between; gap: 4px; }
+        .filter-btn { background: #2b3139; border: 1px solid var(--brd); color: white; font-size: 9px; padding: 6px 4px; border-radius: 3px; cursor: pointer; flex: 1; text-align: center; }
+        .filter-btn.active { border-color: var(--accent); color: var(--accent); font-weight: bold; }
+        
+        .coin-list { flex: 1; overflow-y: auto; background: #000; }
+        /* Немного расширили колонки, чтобы влез значок FLAT */
+        .coin-item { padding: 8px 12px; border-bottom: 1px solid #121212; cursor: pointer; display: grid; grid-template-columns: 20px 1fr 85px 75px; align-items: center; font-size: 11px; gap: 8px; }
+        .coin-price { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; font-variant-numeric: tabular-nums; }
+        .coin-name { font-weight: 600; }
+        .change-val { font-size: 9px; }
+        .coin-item:hover, .coin-item.active { background: #2b3139; }
+        .fav-star { color: #444; cursor: pointer; font-size: 14px; }
+        .fav-star.active { color: var(--accent); }
+        .change-pos { color: #0ecb81; }
+        .change-neg { color: #f6465d; }
+        .natr-val { color: var(--text); font-size: 9px; text-align: right; font-family: monospace; display: flex; flex-direction: column; align-items: flex-end; gap: 2px;}
+        
+        /* Стиль для бейджа боковика */
+        .flat-badge { background: rgba(41, 98, 255, 0.2); border: 1px solid #2962ff; color: #2962ff; font-size: 8px; padding: 1px 4px; border-radius: 2px; font-weight: bold; }
+
+        .main { flex: 1; display: flex; flex-direction: column; }
+        .toolbar { padding: 10px; background: #1e2329; border-bottom: 1px solid var(--brd); display: flex; gap: 8px; align-items: center; }
+        .tf-btn { background: #2b3139; border: none; color: var(--text); padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+        .tf-btn.active { background: var(--accent); color: #000; font-weight: bold; }
+        
+        #chart { flex: 1; width: 100%; position: relative; cursor: crosshair; }
+        .status-bar { padding: 6px 15px; background: #0b0e11; font-size: 10px; color: var(--text); border-bottom: 1px solid var(--brd); display: flex; justify-content: space-between; }
+        #search-box { padding: 10px; background: #0b0e11; border: none; color: white; width: 100%; box-sizing: border-box; font-size: 12px; border-bottom: 1px solid var(--brd); outline: none; }
+
+        #ruler-tooltip {
+            position: fixed; display: none; background: #1e2329; border: 2px solid var(--brd); 
+            color: white; padding: 6px 12px; border-radius: 6px; font-weight: bold; 
+            font-family: monospace; font-size: 14px; z-index: 9999; pointer-events: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <input type="text" id="search-box" placeholder="Поиск монеты...">
+    <div class="filter-panel" id="filter-group">
+        <button class="filter-btn" id="btn-fav">⭐ ИЗБРАН</button>
+        <button class="filter-btn" id="btn-volat">TOP NATR</button>
+        <button class="filter-btn" id="btn-range">БОКОВИК</button>
+        <button class="filter-btn" id="btn-gain">ЛИДЕРЫ</button>
+        <button class="filter-btn" id="btn-lose">ПАДЕНИЕ</button>
+    </div>
+    <div id="list" class="coin-list"></div>
+</div>
+
+<div class="main">
+    <div class="toolbar" id="tf-group">
+        <button class="tf-btn" data-tf="1m">1M</button>
+        <button class="tf-btn active" data-tf="5m">5M</button>
+        <button class="tf-btn" data-tf="15m">15M</button>
+        <button class="tf-btn" data-tf="1h">1H</button>
+        <button class="tf-btn" data-tf="4h">4H</button>
+        <button class="tf-btn" data-tf="1d">1D</button>
+        
+        <button class="tf-btn" id="btn-ruler" style="margin-left: auto;">📏 ЛИНЕЙКА</button>
+        <button class="tf-btn" id="btn-magnet">🧲 МАГНИТ</button>
+    </div>
+    <div class="status-bar">
+        <span id="status">Инициализация алгоритмов...</span>
+        <span id="ws-status">WS: Offline</span>
+    </div>
+    <div id="chart"></div>
+</div>
+
+<div id="ruler-tooltip">0.00%</div>
+
+<script src="script.js"></script>
+</body>
+</html>
