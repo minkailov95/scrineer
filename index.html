@@ -243,6 +243,7 @@
     <button class="draw-btn" title="Текст" id="drawText">T</button>
     <button class="draw-btn" title="Кисть" id="drawBrush">🖌</button>
     <button class="draw-btn" title="Ластик" id="drawEraser">⌫</button>
+    <button class="draw-btn" title="Фракталы" id="drawFractal" style="color:var(--orange);">◇</button>
     <button class="draw-btn" title="Магнит" id="drawMagnet" style="margin-top:auto;color:var(--purple);">🧲</button>
   </div>
 
@@ -530,7 +531,6 @@
         coinPrices[activeCoin] = last.close;
         updateIndicators();
         updateInfoBlocks();
-        try { drawFractals(); } catch(e) {}
       } catch(err) {}
     };
     klineWS.onclose = function() { if (activeCoin) setTimeout(connectKlineWS, 3000); };
@@ -696,7 +696,7 @@
       layout: { background: { type: 'solid', color: '#080B10' }, textColor: '#5C6570' },
       grid: { vertLines: { color: '#141920' }, horzLines: { color: '#141920' } },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-      rightPriceScale: { borderColor: '#1C2128', autoScale: true, priceFormat: { type: 'custom', formatter: function(p) { return p; }, minMove: 1e-8 } },
+      rightPriceScale: { borderColor: '#1C2128', autoScale: true, priceFormat: { type: 'custom', formatter: function(p) { return String(p); }, minMove: 1e-8 } },
       timeScale: { borderColor: '#1C2128', timeVisible: true, secondsVisible: false },
       handleScroll: { vertTouchDrag: false },
     });
@@ -770,7 +770,6 @@
     candleSeries.setData(klineData);
     chart.timeScale().fitContent();
     updateIndicators();
-    setTimeout(function() { clearFractals(); drawFractals(); }, 200);
   }
 
   function updateIndicators() {
@@ -1021,6 +1020,18 @@
     clearPriceLines();
     clearRaySeries();
     clearFractals();
+  });
+
+  $('drawFractal').addEventListener('click', function() {
+    if (fractalHighSeries || fractalLowSeries) {
+      clearFractals();
+      $('drawFractal').classList.remove('active');
+      $('drawFractal').style.color = C.orange;
+    } else {
+      try { drawFractals(); } catch(e) {}
+      $('drawFractal').classList.add('active');
+      $('drawFractal').style.color = C.gold;
+    }
   });
 
   // ============================================================
