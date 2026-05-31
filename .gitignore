@@ -18,3 +18,10 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Generated / cache
+tickers_cache.json
+test_results.json
+d3_demo.html
+echarts_demo.html
+test_v5.html

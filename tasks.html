@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scrineer — Задачи</title>
+  <style>
+    :root {
+      --bg: #080B10; --surface: #0E1319; --surface2: #12161E;
+      --border: #1C2128; --text: #C8D0D8; --textDim: #5C6570;
+      --green: #16C784; --red: #EA3943; --gold: #F0B90B;
+      --orange: #F7931A; --purple: #7C3AED;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 {
+      font-size: 20px; font-weight: 700; margin-bottom: 8px;
+      color: var(--text); text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .subtitle { font-size: 11px; color: var(--textDim); margin-bottom: 24px; }
+    .stats {
+      display: flex; gap: 12px; margin-bottom: 24px;
+    }
+    .stat {
+      padding: 10px 16px; border-radius: 6px;
+      background: var(--surface); border: 1px solid var(--border);
+    }
+    .stat-val { font-size: 24px; font-weight: 700; }
+    .stat-label { font-size: 10px; color: var(--textDim); text-transform: uppercase; letter-spacing: 0.3px; }
+    .stat.pending .stat-val { color: var(--gold); }
+    .stat.completed .stat-val { color: var(--green); }
+    .stat.high .stat-val { color: var(--red); }
+    .task {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 16px; margin-bottom: 8px;
+      border-radius: 6px; background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .task:hover { border-color: var(--textDim); }
+    .task.completed { opacity: 0.5; }
+    .task-id {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .task.completed .task-id { background: var(--green); color: #080B10; }
+    .task.pending .task-id { background: var(--border); color: var(--textDim); }
+    .task-body { flex: 1; min-width: 0; }
+    .task-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .task-desc { font-size: 11px; color: var(--textDim); line-height: 1.5; }
+    .task-meta {
+      display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+    }
+    .badge {
+      padding: 2px 8px; border-radius: 3px; font-size: 10px;
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.2px;
+    }
+    .badge-high { background: rgba(234,57,67,0.12); color: var(--red); }
+    .badge-medium { background: rgba(247,147,26,0.12); color: var(--orange); }
+    .badge-low { background: rgba(92,101,112,0.12); color: var(--textDim); }
+    .badge-done { background: rgba(22,199,132,0.12); color: var(--green); }
+    .filter {
+      display: flex; gap: 6px; margin-bottom: 20px;
+    }
+    .filter-btn {
+      padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border); background: var(--surface);
+      color: var(--textDim); transition: 0.1s;
+    }
+    .filter-btn:hover { color: var(--text); border-color: var(--textDim); }
+    .filter-btn.active { color: var(--gold); border-color: var(--gold); background: rgba(240,185,11,0.06); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Задачи проекта Scrineer</h1>
+  <div class="subtitle" id="updateTime">Загрузка...</div>
+
+  <div class="stats" id="stats"></div>
+  <div class="filter" id="filters"></div>
+  <div id="taskList">Загрузка...</div>
+</div>
+
+<script>
+fetch('tasks.json')
+  .then(r => r.json())
+  .then(tasks => {
+    renderStats(tasks);
+    renderFilters(tasks);
+    renderTasks(tasks);
+
+    document.getElementById('updateTime').textContent =
+      'Обновлено: ' + new Date().toLocaleString('ru-RU') + ' · ' + tasks.length + ' задач';
+
+    window.allTasks = tasks;
+  });
+
+function renderStats(tasks) {
+  var total = tasks.length;
+  var done = tasks.filter(t => t.status === 'completed').length;
+  var pending = tasks.filter(t => t.status === 'pending').length;
+  var high = tasks.filter(t => t.priority === 'high' && t.status === 'pending').length;
+
+  document.getElementById('stats').innerHTML =
+    '<div class="stat"><div class="stat-val">' + total + '</div><div class="stat-label">Всего</div></div>' +
+    '<div class="stat pending"><div class="stat-val">' + pending + '</div><div class="stat-label">В очереди</div></div>' +
+    '<div class="stat completed"><div class="stat-val">' + done + '</div><div class="stat-label">Готово</div></div>' +
+    '<div class="stat high"><div class="stat-val">' + high + '</div><div class="stat-label">Высокий приоритет</div></div>';
+}
+
+function renderFilters(tasks) {
+  document.getElementById('filters').innerHTML =
+    '<button class="filter-btn active" onclick="filterTasks(\'all\')">Все</button>' +
+    '<button class="filter-btn" onclick="filterTasks(\'pending\')">В очереди</button>' +
+    '<button class="filter-btn" onclick="filterTasks(\'completed\')">Готово</button>' +
+    '<button class="filter-btn" onclick="filterTasks(\'high\')">Высокий приоритет</button>';
+}
+
+function filterTasks(type) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  var filtered = window.allTasks;
+  if (type === 'pending') filtered = filtered.filter(t => t.status === 'pending');
+  if (type === 'completed') filtered = filtered.filter(t => t.status === 'completed');
+  if (type === 'high') filtered = filtered.filter(t => t.priority === 'high' && t.status === 'pending');
+  renderTasks(filtered);
+}
+
+function renderTasks(tasks) {
+  var html = '';
+  tasks.forEach(function(t) {
+    var prioBadge = '';
+    if (t.priority === 'high') prioBadge = '<span class="badge badge-high">Высокий</span>';
+    if (t.priority === 'medium') prioBadge = '<span class="badge badge-medium">Средний</span>';
+    if (t.priority === 'low') prioBadge = '<span class="badge badge-low">Низкий</span>';
+
+    var statusBadge = t.status === 'completed'
+      ? '<span class="badge badge-done">Готово</span>'
+      : '';
+
+    var refHtml = t.reference ? '<div class="task-meta"><span style="font-size:10px;color:var(--purple);">🔗 ' + t.reference + '</span></div>' : '';
+
+    html += '<div class="task ' + t.status + '">' +
+      '<div class="task-id">' + t.id + '</div>' +
+      '<div class="task-body">' +
+        '<div class="task-title">' + t.title + '</div>' +
+        '<div class="task-desc">' + t.description + '</div>' +
+        refHtml +
+        '<div class="task-meta">' + prioBadge + ' ' + statusBadge + '</div>' +
+      '</div>' +
+    '</div>';
+  });
+
+  if (tasks.length === 0) {
+    html = '<div style="text-align:center;padding:40px;color:var(--textDim);">Задач нет</div>';
+  }
+
+  document.getElementById('taskList').innerHTML = html;
+}
+</script>
+</body>
+</html>

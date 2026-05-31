@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scrineer — Терминал</title>
-  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -82,9 +82,42 @@
       display: flex; align-items: center; gap: 6px;
       padding: 5px 10px; font-size: 11px; color: var(--text);
       cursor: pointer; white-space: nowrap;
+      border-radius: 4px; transition: 0.1s;
     }
     .ind-item:hover { background: var(--surface); }
-    .ind-item input { accent-color: var(--gold); }
+    .ind-item.active { background: rgba(240,185,11,0.15); color: var(--gold); font-weight: 600; }
+
+    .ind-badge {
+      position: absolute; top: 8px; left: 8px; z-index: 10;
+      display: flex; gap: 4px; flex-wrap: wrap; pointer-events: auto;
+    }
+    .ind-badge-item {
+      padding: 2px 7px; border-radius: 3px; font-size: 10px;
+      background: rgba(14,19,25,0.9); border: 1px solid var(--border);
+      color: var(--textDim); cursor: pointer; white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .ind-badge-item:hover { border-color: var(--gold); color: var(--text); }
+
+    .ind-settings {
+      position: absolute; top: 32px; left: 8px; z-index: 20;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 5px; padding: 10px; font-size: 11px;
+      min-width: 180px; display: none; pointer-events: auto;
+    }
+    .ind-settings label { display: block; margin-bottom: 6px; color: var(--textDim); }
+    .ind-settings input {
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 3px 6px; border-radius: 3px;
+      width: 60px; font-size: 11px; font-family: 'JetBrains Mono';
+    }
+    .ind-settings input:focus { border-color: var(--gold); outline: none; }
+    .ind-settings .btn-row { display: flex; gap: 4px; margin-top: 8px; }
+    .ind-settings button {
+      padding: 3px 10px; border-radius: 3px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text); cursor: pointer; font-size: 11px;
+    }
+    .ind-settings button:hover { border-color: var(--gold); }
 
     .sort-header {
       cursor: pointer; user-select: none;
@@ -120,6 +153,33 @@
       transform: translateY(-50%);
       transition: top 0.15s ease;
     }
+    .ray-settings {
+      position: absolute; z-index: 100;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 8px; display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      font-size: 11px; pointer-events: auto;
+    }
+    .ray-settings label { display: block; margin-bottom: 4px; color: var(--textDim); }
+    .ray-settings input {
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 2px 4px; border-radius: 3px;
+      font-family: 'JetBrains Mono'; margin-bottom: 8px;
+    }
+    .ray-settings .row { display: flex; gap: 5px; align-items: center; }
+    .ray-settings button {
+      padding: 3px 8px; background: var(--surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: 3px; cursor: pointer;
+    }
+    .ray-settings button:hover { border-color: var(--gold); }
+    .ray-handle {
+      cursor: grab; padding: 4px 8px; margin: -8px -8px 6px -8px;
+      background: var(--border); border-radius: 6px 6px 0 0;
+      font-size: 10px; font-weight: 600; color: var(--textDim);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      user-select: none;
+    }
+    .ray-handle:active { cursor: grabbing; }
     .price-tag.up { background: var(--green); color: #080B10; }
     .price-tag.down { background: var(--red); color: #FFFFFF; }
 
@@ -235,12 +295,16 @@
   <button class="tf-btn">1н</button>
   <button class="tf-btn">1М</button>
   <span class="sep"></span>
+  <span class="sep"></span>
+  <span style="font-size:12px;">🕯</span>
+  <span class="sep"></span>
   <div class="ind-dropdown" id="indDropdown">
     <button class="tb-ind" id="indBtn">⚙ Индикаторы ▾</button>
     <div class="ind-menu" id="indMenu" style="display:none;">
-      <label class="ind-item"><input type="checkbox" id="indBB"> Bollinger Bands</label>
-      <label class="ind-item"><input type="checkbox" id="indSMA"> SMA 20</label>
-      <label class="ind-item"><input type="checkbox" id="indRSI"> RSI 14</label>
+      <div class="ind-item" id="btnBB">Bollinger Bands</div>
+      <div class="ind-item" id="btnSMA">SMA 20</div>
+      <div class="ind-item" id="btnRSI">RSI 14</div>
+      <div class="ind-item" style="color:var(--orange);" id="btnFractal">Авто-уровни</div>
     </div>
   </div>
   <span style="margin-left:auto;color:var(--textDim);font-size:10px;" id="ohlcInfo">O: — H: — L: — C: —</span>
@@ -252,16 +316,18 @@
     <button class="draw-btn" title="Линия" id="drawLine">╱</button>
     <button class="draw-btn" title="Гориз. линия" id="drawHLine">—</button>
     <button class="draw-btn" title="Луч" id="drawRay">→</button>
-    <button class="draw-btn" title="Прямоугольник" id="drawRect">▭</button>
+    <button class="draw-btn" title="Прямоугольник" id="drawRect">⬜</button>
+    <button class="draw-btn" title="Линейка" id="drawRuler">📏</button>
     <button class="draw-btn" title="Текст" id="drawText">T</button>
     <button class="draw-btn" title="Кисть" id="drawBrush">🖌</button>
     <button class="draw-btn" title="Ластик" id="drawEraser">⌫</button>
-    <button class="draw-btn" title="Фракталы" id="drawFractal" style="color:var(--orange);">◇</button>
     <button class="draw-btn" title="Магнит" id="drawMagnet" style="margin-top:auto;color:var(--purple);">🧲</button>
   </div>
 
   <div class="chart-area" id="chartArea">
     <div id="chartContainer"></div>
+    <div class="ind-badge" id="indBadge"></div>
+    <div class="ind-settings" id="indSettings"></div>
     <div class="price-tag up" id="priceTag" style="display:none;">—</div>
     <div class="info-blocks" id="infoBlocks">
       <div class="info-block"><span class="inf-label">[24ч] Об:</span><span class="inf-val" id="infoVol">—</span></div>
@@ -270,7 +336,44 @@
       <div class="info-block"><span class="inf-label">OI Δ5м:</span><span class="inf-val" id="infoOI">—</span></div>
       <div class="info-block"><span class="inf-label">Спред:</span><span class="inf-val" id="infoSpread">—</span></div>
     </div>
-    <div class="crosshair-info" id="crosshairInfo"></div>
+    <div class="ray-settings" id="raySettings">
+      <div class="ray-handle" id="rayHandle">⊙ Луч</div>
+      <div class="row">
+        <label>Цвет</label>
+        <input type="color" id="rayColor" value="#F0B90B">
+      </div>
+      <div class="row">
+        <label>Толщина</label>
+        <input type="number" id="rayWidth" value="1" min="1" max="10" style="width: 40px;">
+      </div>
+      <div class="row">
+        <label>Текст</label>
+        <input type="text" id="rayText" placeholder="Метка..." style="width: 80px;">
+      </div>
+      <div class="row">
+        <button id="rayApply">ОК</button>
+        <button id="rayDel" style="color: var(--red);">Удалить</button>
+      </div>
+    </div>
+    <div class="ray-settings" id="textSettings">
+      <div class="ray-handle" id="txtHandle">⊙ Текст</div>
+      <div class="row">
+        <label>Текст</label>
+        <input type="text" id="txtText" placeholder="Метка..." style="width: 100px;">
+      </div>
+      <div class="row">
+        <label>Цвет</label>
+        <input type="color" id="txtColor" value="#F0B90B">
+      </div>
+      <div class="row">
+        <label>Размер</label>
+        <input type="number" id="txtSize" value="12" min="8" max="48" style="width: 40px;">
+      </div>
+      <div class="row">
+        <button id="txtApply">ОК</button>
+        <button id="txtDel" style="color: var(--red);">Удалить</button>
+      </div>
+    </div>
   </div>
 
   <div class="right-panel">
@@ -308,8 +411,8 @@
   // CONSTANTS
   // ============================================================
   var BINANCE_REST = 'https://fapi.binance.com';
-  var BINANCE_WS = 'wss://fstream.binance.com/stream?streams=';
-  var BINANCE_WS_SINGLE = 'wss://fstream.binance.com/ws/';
+  var BINANCE_WS = 'wss://fstream.binance.com/market/stream?streams=';
+  var BINANCE_WS_SINGLE = 'wss://fstream.binance.com/market/ws/';
 
   // ============================================================
   // DOM REFS
@@ -320,7 +423,7 @@
   // STATE
   // ============================================================
   var activeCoin = 'BTCUSDT';
-  var activeInterval = '1d';
+  var activeInterval = '5m';
   var klineData = [];
   var tickersData = [];
   var natrData = {};
@@ -329,20 +432,35 @@
   var priceDecimals = 2;
   var priceWS = null;
   var klineWS = null;
-  var showBB = false, showSMA = false, showRSI = false;
+  var showBB = false, showSMA = false, showRSI = false, showFractals = true;
+  var chartType = 'candles';
+  var fractalTFMap = { '1m': '5m', '5m': '15m', '15m': '30m', '30m': '1h', '1h': '2h', '2h': '4h', '4h': '1d', '1d': '1d', '1w': '1w', '1M': '1M' };
+  var fractalKlines = null, fractalKlinesTF = null;
   var drawMode = 'cursor';
   var magnetActive = false;
   var rulers = [];
-  var hLines = [];
+  var rulerLines = [];
+  var hLinesArr = [];
   var pendingRuler = null;
-  var sortColumn = 'natr';
+  var pendingRect = null;
+  var rects = [];
+  var texts = [];
+  var sortColumn = 'ch24';
   var sortDirection = 'desc';
   var allSymbols = [];
-  var chart = null;
-  var candleSeries = null;
-  var bbUpperSeries = null, bbMidSeries = null, bbLowerSeries = null;
-  var smaSeries = null, rsiSeries = null;
+
+  // ============================================================
+  // D3 CHART STATE
+  // ============================================================
+  var svg, chartG, gridG, volumeG, candleG, smaG, bbG, rsiG, rayG, hLineG, rectG, textG, fractalG, xAxisG, yAxisG, labelG, rulerG, currentPriceLineG, xAxisTimeLabel;
+  var crossV, crossH, crossLabel;
+  var xScale, xScaleOrig, yScale, yRsiScale, volumeScale;
   var chartReady = false;
+  var priceLineData = [], rayData = [], fractalLinesData = [];
+  var margin = {top: 8, right: 65, bottom: 28, left: 5};
+  var chartWidth, chartHeight;
+  var clipId = 'clip_' + Date.now();
+  var renderPending = false;
 
   // ============================================================
   // CHART COLORS
@@ -365,6 +483,10 @@
   // ============================================================
   function fmtPrice(sym, p) { var d = 2; if (p < 0.01) d = 6; else if (p < 1) d = 4; else if (p < 100) d = 3; return p.toFixed(d); }
   function getDec(sym) { var p = coinPrices[sym]; if (!p) return 4; if (p < 0.01) return 6; if (p < 1) return 4; if (p < 100) return 3; return 2; }
+  function fmtNum(v, maxDec) {
+    maxDec = maxDec || 6;
+    return v.toFixed(maxDec).replace(/(\.\d*?)0+$/, '$10');
+  }
 
   // ============================================================
   // API FUNCTIONS
@@ -384,20 +506,31 @@
   }
 
   async function fetchAllTickers() {
-    var r = await fetch(BINANCE_REST + '/fapi/v1/ticker/24hr');
-    var data = await r.json();
-    // Filter to only USDT perpetual contracts we know about
-    var validSet = {};
-    allSymbols.forEach(function(s) { validSet[s] = true; });
-    tickersData = data
-      .filter(function(t) { return validSet[t.symbol]; })
-      .map(function(t) {
-        var sym = t.symbol;
-        coinPrices[sym] = +t.lastPrice;
-        changes24h[sym] = +t.priceChangePercent;
-        return { s: sym.replace('USDT', ''), symbol: sym, c: +t.lastPrice, ch: +t.priceChangePercent, v: +t.quoteVolume };
+    try {
+      var r = await fetch('/api/tickers');
+      var data = await r.json();
+      tickersData = data.map(function(t) {
+        coinPrices[t.symbol] = t.c;
+        // Не перезаписываем changes24h — живые данные идут из WebSocket
+        if (changes24h[t.symbol] == null) changes24h[t.symbol] = t.ch;
+        natrData[t.symbol] = t.natr;
+        return { s: t.s, symbol: t.symbol, c: t.c, ch: t.ch, v: t.v };
       });
+
+      if (tickersData.length > 0) {
+        if ($('coinBody').children.length === 0) {
+          renderCoinTable();
+        }
+        updateCoinTableValues();
+      }
+    } catch(e) {
+      console.error("Error updating tickers:", e);
+    }
     return tickersData;
+  }
+
+  async function loadAllNATR() {
+    return Promise.resolve();
   }
 
   async function fetchExchangeInfo() {
@@ -477,9 +610,10 @@
   // WEBSOCKET
   // ============================================================
   function connectPriceWS() {
-    if (priceWS) { try { priceWS.close(); } catch(e) {} }
+    if (priceWS) { try { priceWS.onclose = null; priceWS.close(); } catch(e) {} }
     priceWS = new WebSocket(BINANCE_WS + '!miniTicker@arr');
     priceWS.onopen = function() {
+      console.log('[WS PRICE] Connected OK');
       $('statusDot').className = 'status-dot';
       $('statusText').textContent = 'Binance WebSocket · ' + (activeCoin || '');
     };
@@ -493,7 +627,7 @@
           if (o > 0) changes24h[sym] = ((p - o) / o * 100);
           if (sym === activeCoin) updatePriceFromTicker(p);
         });
-        renderCoinTable();
+        updateCoinTableValues();
       } catch(err) {}
     };
     priceWS.onclose = function() {
@@ -513,42 +647,50 @@
     last.close = p;
     if (p > last.high) last.high = p;
     if (p < last.low) last.low = p;
+    $('currentPriceLabel').textContent = '$' + fmtNum(p, 6);
+    var ch = changes24h[activeCoin];
+    $('currentPriceLabel').style.color = (ch != null && ch >= 0) ? C.candleUp : C.candleDown;
+    console.log('[PRICE]', activeCoin, 'new=' + fmtNum(p, 6));
     updateInfoBlocks();
     updatePriceTag();
-    if (candleSeries) {
-      try { candleSeries.update(last); } catch(ex) {}
+    if (chartReady) {
+      scheduleRender();
     }
   }
 
   function connectKlineWS() {
-    if (klineWS) { try { klineWS.close(); } catch(e) {} }
+    if (klineWS) { try { klineWS.onclose = null; klineWS.close(); } catch(e) {} }
     if (!activeCoin) return;
-    klineWS = new WebSocket(BINANCE_WS_SINGLE + activeCoin.toLowerCase() + '@kline_' + activeInterval);
+    var wsUrl = BINANCE_WS_SINGLE + activeCoin.toLowerCase() + '@kline_' + activeInterval;
+    console.log('[KLINE] Connecting to', wsUrl);
+    klineWS = new WebSocket(wsUrl);
+    klineWS.onopen = function() { console.log('[KLINE] WS open OK'); };
     klineWS.onmessage = function(e) {
       try {
         var msg = JSON.parse(e.data);
         if (!msg.k) return;
         var k = msg.k, t = Math.floor(k.t / 1000);
+        console.log('[KLINE]', activeCoin, activeInterval, 'x=' + k.x, 'c=' + k.c, 'o=' + k.o, 'h=' + k.h, 'l=' + k.l);
         if (klineData.length === 0) return;
         var last = klineData[klineData.length - 1];
         if (k.x) {
           klineData.push({ time: t, open: +k.o, high: +k.h, low: +k.l, close: +k.c, volume: +k.v });
           if (klineData.length > 500) klineData.shift();
-          if (candleSeries) candleSeries.setData(klineData);
+          scheduleRender();
         } else {
           last.close = +k.c;
           if (+k.h > last.high) last.high = +k.h;
           if (+k.l < last.low) last.low = +k.l;
-          if (candleSeries) {
-            try { candleSeries.update(last); } catch(ex) {}
-          }
+          scheduleRender();
         }
         coinPrices[activeCoin] = last.close;
         updateIndicators();
         updateInfoBlocks();
-      } catch(err) {}
+      } catch(err) {
+        console.error('WS Kline Error:', err);
+      }
     };
-    klineWS.onclose = function() { if (activeCoin) setTimeout(connectKlineWS, 3000); };
+    klineWS.onclose = function() { console.log('[KLINE] WS closed, reconnect in 3s'); if (activeCoin) setTimeout(connectKlineWS, 3000); };
   }
 
   // ============================================================
@@ -566,16 +708,7 @@
   }
 
   async function loadAllNATR() {
-    if (natrLoading) return;
-    natrLoading = true;
-    var syms = tickersData.map(function(t) { return t.symbol; });
-    // Load in batches of 5
-    for (var i = 0; i < syms.length; i += 5) {
-      var batch = syms.slice(i, i + 5);
-      await Promise.all(batch.map(loadNATRForSymbol));
-      renderCoinTable();
-    }
-    natrLoading = false;
+    return Promise.resolve();
   }
 
   // ============================================================
@@ -590,7 +723,6 @@
       return t.s.toLowerCase().indexOf(searchTerm) !== -1;
     });
 
-    // Sort
     list.sort(function(a, b) {
       var vA, vB;
       if (sortColumn === 'name') {
@@ -601,7 +733,6 @@
         vA = changes24h[a.symbol] != null ? changes24h[a.symbol] : a.ch;
         vB = changes24h[b.symbol] != null ? changes24h[b.symbol] : b.ch;
       } else {
-        // natr (default)
         vA = natrData[a.symbol] != null ? natrData[a.symbol] : -1;
         vB = natrData[b.symbol] != null ? natrData[b.symbol] : -1;
       }
@@ -621,13 +752,12 @@
 
       return '<tr' + activeClass + ' data-sym="' + t.symbol + '">' +
         '<td>' + t.s + ' <span style="font-size:8px;color:var(--textFaint);">USDT</span></td>' +
-        '<td class="' + natrClass + '">' + natrStr + '</td>' +
-        '<td class="' + chClass + '">' + chStr + '</td>' +
+        '<td class="val-natr ' + natrClass + '">' + natrStr + '</td>' +
+        '<td class="val-ch ' + chClass + '">' + chStr + '</td>' +
         '<td style="color:var(--textDim);">—</td>' +
         '</tr>';
     }).join('');
 
-    // Click handlers
     tbody.querySelectorAll('tr').forEach(function(row) {
       row.addEventListener('click', async function() {
         activeCoin = row.dataset.sym;
@@ -635,8 +765,8 @@
         $('navSym').textContent = activeCoin;
         tbody.querySelectorAll('tr').forEach(function(r) { r.classList.remove('active'); });
         row.classList.add('active');
-        rulers = []; hLines = []; pendingRuler = null;
-        clearPriceLines(); clearRaySeries(); clearFractals();
+        rulers = []; hLinesArr = []; pendingRuler = null;
+        clearPriceLines(); clearRaySeries(); clearFractals(); rulerLines = [];
         await loadChartData();
         connectKlineWS();
         updateInfoBlocks();
@@ -644,9 +774,32 @@
     });
   }
 
+  function updateCoinTableValues() {
+    var rows = $('coinBody').querySelectorAll('tr');
+    rows.forEach(function(row) {
+      var sym = row.dataset.sym;
+      var natr = natrData[sym];
+      if (natr != null) {
+        var cell = row.querySelector('.val-natr');
+        if (cell) {
+          cell.textContent = natr >= 0 ? natr.toFixed(2) : '...';
+          cell.className = 'val-natr ' + (natr > 4 ? 'text-o' : '');
+        }
+      }
+      var ch = changes24h[sym];
+      if (ch != null) {
+        var cell = row.querySelector('.val-ch');
+        if (cell) {
+          cell.textContent = (ch >= 0 ? '+' : '') + ch.toFixed(2) + '%';
+          cell.className = 'val-ch ' + (ch >= 0 ? 'text-g' : 'text-r');
+        }
+      }
+    });
+  }
+
   $('coinSearch').addEventListener('input', renderCoinTable);
 
-  // Sort headers
+
   document.querySelectorAll('.sort-header').forEach(function(th) {
     th.addEventListener('click', function() {
       var col = th.dataset.sort;
@@ -672,15 +825,15 @@
       var chEl = $('infoChg');
       chEl.textContent = ch >= 0 ? '+' + ch.toFixed(2) + '%' : ch.toFixed(2) + '%';
       chEl.style.color = ch >= 0 ? C.candleUp : C.candleDown;
-      $('currentPriceLabel').textContent = '$' + parseFloat(parseFloat(t.lastPrice).toFixed(6)).toString();
-      $('currentPriceLabel').style.color = ch >= 0 ? C.candleUp : C.candleDown;
+      if (!$('currentPriceLabel').textContent || $('currentPriceLabel').textContent === '$—') {
+        $('currentPriceLabel').textContent = '$' + t.lastPrice;
+        $('currentPriceLabel').style.color = ch >= 0 ? C.candleUp : C.candleDown;
+      }
     } catch(e) {}
 
-    // NATR for current coin
     var natr = natrData[activeCoin];
     $('infoNatr').textContent = natr != null && natr >= 0 ? natr.toFixed(2) : '...';
 
-    // Spread (bid/ask) - try to get from bookTicker
     try {
       var r = await fetch(BINANCE_REST + '/fapi/v1/ticker/bookTicker?symbol=' + activeCoin);
       var bt = await r.json();
@@ -699,16 +852,16 @@
   // ============================================================
   function updatePriceTag() {
     var tag = $('priceTag');
-    if (!tag || !candleSeries || klineData.length === 0) return;
+    if (!tag || !chartReady || klineData.length === 0) return;
     var last = klineData[klineData.length - 1];
     var price = coinPrices[activeCoin] || last.close;
     var up = last.close >= last.open;
-    tag.textContent = parseFloat(price.toFixed(6)).toString();
+    tag.textContent = fmtNum(price, 6);
     tag.className = 'price-tag ' + (up ? 'up' : 'down');
     try {
-      var y = candleSeries.priceToY(price);
+      var y = yScale(price);
       if (y !== null && y > 0) {
-        tag.style.top = y + 'px';
+        tag.style.top = (y + margin.top) + 'px';
         tag.style.display = 'block';
       } else {
         tag.style.display = 'none';
@@ -716,84 +869,762 @@
     } catch(e) { tag.style.display = 'none'; }
   }
 
-  function initChart() {
-    if (chart) {
-      try { chart.remove(); } catch(e) {}
+  // ============================================================
+  // D3 CHART — RENDER FUNCTIONS
+  // ============================================================
+
+  function scheduleRender() {
+    if (renderPending) return;
+    renderPending = true;
+    console.log('[RENDER] scheduling...');
+    requestAnimationFrame(function() {
+      renderPending = false;
+      renderAll();
+    });
+  }
+
+  function renderAll() {
+    if (!chartReady || !xScaleOrig || !yScale || klineData.length === 0) return;
+
+    var extent = d3.extent(klineData, function(d) { return d.time; });
+    xScaleOrig.domain(extent).range([0, chartWidth]);
+    yScale.range([chartHeight, 0]);
+    yRsiScale.range([chartHeight, chartHeight * 0.85]);
+
+    var t = d3.zoomTransform(svg.node());
+    xScale = t.rescaleX(xScaleOrig);
+
+    var priceMin = Infinity, priceMax = -Infinity;
+    var visData = klineData.filter(function(d) {
+      var x = xScale(d.time);
+      return x >= margin.left - 10 && x <= margin.left + chartWidth + 10;
+    });
+    if (visData.length === 0) { visData = klineData; }
+
+    visData.forEach(function(d) {
+      if (d.high > priceMax) priceMax = d.high;
+      if (d.low < priceMin) priceMin = d.low;
+    });
+
+    var padding = (priceMax - priceMin) * 0.05 || priceMax * 0.01 || 0.01;
+    yScale.domain([priceMin - padding, priceMax + padding]);
+
+    renderGrid();
+    renderVolumes();
+    renderCandles();
+    renderAxes();
+    renderIndicators();
+    renderFractals();
+    renderRays();
+    renderRects();
+    renderTexts();
+    renderPriceLines();
+    renderCurrentPriceLine();
+    renderRulers();
+    updatePriceTag();
+  }
+
+  function renderGrid() {
+    gridG.selectAll('*').remove();
+
+
+    var ticks = yScale.ticks(18);
+    ticks.forEach(function(t) {
+      var y = yScale(t);
+      gridG.append('line')
+        .attr('x1', margin.left).attr('x2', margin.left + chartWidth)
+        .attr('y1', margin.top + y).attr('y2', margin.top + y)
+        .attr('stroke', C.grid).attr('stroke-width', 0.5);
+    });
+
+    if (showRSI) {
+      [30, 70].forEach(function(v) {
+        var y = yRsiScale(v);
+        gridG.append('line')
+          .attr('x1', margin.left).attr('x2', margin.left + chartWidth)
+          .attr('y1', margin.top + y).attr('y2', margin.top + y)
+          .attr('stroke', C.rsi).attr('stroke-width', 0.5)
+          .attr('stroke-dasharray', '2,4');
+      });
     }
+  }
+
+  function renderCandles() {
+    if (klineData.length === 0) return;
+
+    var candleDist = klineData.length > 1 ? (xScale(klineData[1].time) - xScale(klineData[0].time)) : chartWidth / 50;
+    var bodyW = Math.max(1, Math.min(100, candleDist * 0.7));
+
+    candleG.selectAll('.wick')
+      .data(klineData, function(d) { return d.time; })
+      .join('line')
+      .attr('class', 'wick')
+      .attr('x1', function(d) { return margin.left + xScale(d.time); })
+      .attr('x2', function(d) { return margin.left + xScale(d.time); })
+      .attr('y1', function(d) { return margin.top + yScale(d.high); })
+      .attr('y2', function(d) { return margin.top + yScale(d.low); })
+      .attr('stroke', function(d) { return d.close >= d.open ? C.wickUp : C.wickDown; })
+      .attr('stroke-width', 1);
+
+    candleG.selectAll('.body')
+      .data(klineData, function(d) { return d.time; })
+      .join('rect')
+      .attr('class', 'body')
+      .attr('x', function(d) { return margin.left + xScale(d.time) - bodyW / 2; })
+      .attr('y', function(d) { return margin.top + Math.min(yScale(d.open), yScale(d.close)); })
+      .attr('width', bodyW)
+      .attr('height', function(d) { return Math.max(1, Math.abs(yScale(d.close) - yScale(d.open))); })
+      .attr('fill', function(d) { return d.close >= d.open ? C.candleUp : C.candleDown; });
+  }
+
+  function renderVolumes() {
+    if (klineData.length === 0) return;
+
+    var maxVol = d3.max(klineData, function(d) { return d.volume; });
+    volumeScale.domain([0, maxVol]).range([0, chartHeight * 0.2]);
+
+    var candleDist = klineData.length > 1 ? (xScale(klineData[1].time) - xScale(klineData[0].time)) : chartWidth / 50;
+    var bodyW = Math.max(1, Math.min(100, candleDist * 0.7));
+
+    volumeG.selectAll('.vol-bar')
+      .data(klineData, function(d) { return d.time; })
+      .join('rect')
+      .attr('class', 'vol-bar')
+      .attr('x', function(d) { return margin.left + xScale(d.time) - bodyW / 2; })
+      .attr('y', function(d) { return margin.top + chartHeight - volumeScale(d.volume); })
+      .attr('width', bodyW)
+      .attr('height', function(d) { return volumeScale(d.volume); })
+      .attr('fill', function(d) { return d.close >= d.open ? 'rgba(22,199,132,0.3)' : 'rgba(234,57,67,0.3)'; });
+  }
+
+  function renderAxes() {
+    xAxisG.selectAll('*').remove();
+    yAxisG.selectAll('*').remove();
+
+    yAxisG.attr('transform', 'translate(' + (margin.left + chartWidth) + ',' + margin.top + ')');
+
+    var yTicks = yScale.ticks(18);
+    yTicks.forEach(function(t) {
+      var y = yScale(t);
+      yAxisG.append('text')
+        .attr('x', 4)
+        .attr('y', y + 3)
+        .attr('fill', C.text)
+        .attr('font-family', 'JetBrains Mono, monospace')
+        .attr('font-size', '10px')
+        .text(fmtNum(t, 6));
+    });
+
+    xAxisG.attr('transform', 'translate(' + margin.left + ',' + (margin.top + chartHeight) + ')');
+    var xAxis = d3.axisBottom(xScale).ticks(Math.min(10, Math.floor(chartWidth / 80)));
+    xAxisG.call(xAxis);
+    xAxisG.selectAll('text')
+      .attr('fill', C.text)
+      .attr('font-family', 'JetBrains Mono, monospace')
+      .attr('font-size', '9px');
+    xAxisG.selectAll('.domain, .tick line')
+      .attr('stroke', C.grid);
+  }
+
+  function renderIndicators() {
+    smaG.selectAll('*').remove();
+    bbG.selectAll('*').remove();
+    rsiG.selectAll('*').remove();
+
+    if (showSMA && klineData.length >= smaPeriod) {
+      var smaData = calcSMA(klineData, smaPeriod);
+      var smaLine = d3.line()
+        .x(function(d) { return margin.left + xScale(d.time); })
+        .y(function(d) { return margin.top + yScale(d.value); });
+      smaG.append('path')
+        .datum(smaData)
+        .attr('d', smaLine)
+        .attr('fill', 'none')
+        .attr('stroke', C.sma)
+        .attr('stroke-width', 1);
+    }
+
+    if (showBB && klineData.length >= bbPeriod) {
+      var bb = calcBB(klineData, bbPeriod, bbMult);
+
+      var bbArea = d3.area()
+        .x(function(d) { return margin.left + xScale(d.time); })
+        .y0(function(d) { return margin.top + yScale(d.lower); })
+        .y1(function(d) { return margin.top + yScale(d.upper); });
+      bbG.append('path')
+        .datum(bb)
+        .attr('d', bbArea)
+        .attr('fill', C.bbFill);
+
+      var upperLine = d3.line()
+        .x(function(d) { return margin.left + xScale(d.time); })
+        .y(function(d) { return margin.top + yScale(d.upper); });
+      bbG.append('path').datum(bb).attr('d', upperLine).attr('fill', 'none')
+        .attr('stroke', C.bbUpper).attr('stroke-width', 1).attr('stroke-dasharray', '4,2');
+
+      var midLine = d3.line()
+        .x(function(d) { return margin.left + xScale(d.time); })
+        .y(function(d) { return margin.top + yScale(d.mid); });
+      bbG.append('path').datum(bb).attr('d', midLine).attr('fill', 'none')
+        .attr('stroke', C.bbMid).attr('stroke-width', 1);
+
+      var lowerLine = d3.line()
+        .x(function(d) { return margin.left + xScale(d.time); })
+        .y(function(d) { return margin.top + yScale(d.lower); });
+      bbG.append('path').datum(bb).attr('d', lowerLine).attr('fill', 'none')
+        .attr('stroke', C.bbLower).attr('stroke-width', 1).attr('stroke-dasharray', '4,2');
+    }
+
+    if (showRSI && klineData.length >= rsiPeriod) {
+      var rsiData = calcRSI(klineData, rsiPeriod);
+      var rsiLine = d3.line()
+        .x(function(d) { return margin.left + xScale(d.time); })
+        .y(function(d) { return margin.top + yRsiScale(d.value); });
+      rsiG.append('path')
+        .datum(rsiData)
+        .attr('d', rsiLine)
+        .attr('fill', 'none')
+        .attr('stroke', C.rsi)
+        .attr('stroke-width', 1);
+    }
+  }
+
+  function renderFractals() {
+    fractalG.selectAll('*').remove();
+    if (fractalLinesData.length === 0) return;
+
+    fractalLinesData.forEach(function(f) {
+      var x1 = margin.left + xScale(f.time);
+      var x2 = margin.left + chartWidth - 4;
+      var y = margin.top + yScale(f.value);
+      fractalG.append('line')
+        .attr('x1', x1).attr('x2', x2)
+        .attr('y1', y).attr('y2', y)
+        .attr('stroke', f.isHigh ? 'rgba(234,57,67,0.5)' : 'rgba(22,199,132,0.5)')
+        .attr('stroke-width', 1);
+    });
+  }
+
+  function renderRays() {
+    rayG.selectAll('*').remove();
+    if (rayData.length === 0) return;
+
+    rayData.forEach(function(r, i) {
+      var x1 = margin.left + xScale(r.time);
+      var x2 = margin.left + chartWidth;
+      var y = margin.top + yScale(r.price);
+      
+      var line = rayG.append('line')
+        .attr('x1', x1).attr('x2', x2)
+        .attr('y1', y).attr('y2', y)
+        .attr('stroke', r.color || C.orange)
+        .attr('stroke-width', r.width || 1)
+        .attr('cursor', 'pointer')
+        .on('click', function(e) {
+          e.stopPropagation();
+          showRaySettings(i);
+        });
+
+      if (r.text) {
+        rayG.append('text')
+          .attr('x', x1 + 4).attr('y', y - 4)
+          .attr('fill', r.color || C.orange)
+          .attr('font-family', 'JetBrains Mono, monospace')
+          .attr('font-size', '10px')
+          .text(r.text);
+      }
+    });
+  }
+
+  function renderRects() {
+    rectG.selectAll('*').remove();
+    if (rects.length === 0) return;
+    rects.forEach(function(r) {
+      var x1 = margin.left + xScale(r.time1);
+      var x2 = margin.left + xScale(r.time2);
+      var y1 = margin.top + yScale(r.price1);
+      var y2 = margin.top + yScale(r.price2);
+      rectG.append('rect')
+        .attr('x', Math.min(x1, x2))
+        .attr('y', Math.min(y1, y2))
+        .attr('width', Math.abs(x2 - x1))
+        .attr('height', Math.abs(y2 - y1))
+        .attr('fill', 'rgba(240,185,11,0.1)')
+        .attr('stroke', C.gold)
+        .attr('stroke-width', 1);
+    });
+  }
+
+  function renderTexts() {
+    textG.selectAll('*').remove();
+    if (texts.length === 0) return;
+    texts.forEach(function(t, i) {
+      var x = margin.left + xScale(t.time);
+      var y = margin.top + yScale(t.price);
+      textG.append('text')
+        .attr('x', x)
+        .attr('y', y)
+        .attr('fill', t.color || C.gold)
+        .attr('font-family', 'JetBrains Mono, monospace')
+        .attr('font-size', (t.fontSize || 12) + 'px')
+        .attr('text-anchor', 'middle')
+        .attr('cursor', 'pointer')
+        .text(t.text)
+        .on('click', function(e) {
+          e.stopPropagation();
+          showTextSettings(i);
+        });
+    });
+  }
+
+  function renderPriceLines() {
+    hLineG.selectAll('*').remove();
+    labelG.selectAll('*').remove();
+    if (priceLineData.length === 0) return;
+
+    priceLineData.forEach(function(pl) {
+      var y = margin.top + yScale(pl.price);
+      hLineG.append('line')
+        .attr('x1', margin.left).attr('x2', margin.left + chartWidth)
+        .attr('y1', y).attr('y2', y)
+        .attr('stroke', pl.color || C.purple)
+        .attr('stroke-width', 1)
+        .attr('stroke-dasharray', '4,4');
+      labelG.append('text')
+        .attr('x', margin.left + chartWidth + 4)
+        .attr('y', y + 4)
+        .attr('fill', pl.color || C.purple)
+        .attr('font-family', 'JetBrains Mono, monospace')
+        .attr('font-size', '10px')
+        .text(pl.title || '');
+    });
+  }
+
+  function renderCurrentPriceLine() {
+    currentPriceLineG.selectAll('*').remove();
+    if (klineData.length === 0) return;
+
+    var lastCandle = klineData[klineData.length - 1];
+    var price = coinPrices[activeCoin] || lastCandle.close;
+    var up = price >= lastCandle.open;
+    var color = up ? C.candleUp : C.candleDown;
+
+    var x1 = margin.left + xScale(lastCandle.time);
+    var y = margin.top + yScale(price);
+
+    currentPriceLineG.append('line')
+      .attr('x1', x1).attr('x2', margin.left + chartWidth)
+      .attr('y1', y).attr('y2', y)
+      .attr('stroke', color)
+      .attr('stroke-width', 1)
+      .attr('stroke-dasharray', '2,2');
+  }
+
+  function renderRulers() {
+    rulerG.selectAll('*').remove();
+    if (rulerLines.length === 0) return;
+
+    rulerLines.forEach(function(r) {
+      var x1 = margin.left + xScale(r.time1);
+      var x2 = margin.left + xScale(r.time2);
+      var y1 = margin.top + yScale(r.price1);
+      var y2 = margin.top + yScale(r.price2);
+      var midX = (x1 + x2) / 2;
+      var midY = (y1 + y2) / 2;
+      var diff = r.price2 - r.price1;
+      var pct = (diff / r.price1 * 100).toFixed(2);
+
+      // Solid line
+      rulerG.append('line')
+        .attr('x1', x1).attr('x2', x2)
+        .attr('y1', y1).attr('y2', y2)
+        .attr('stroke', C.gold)
+        .attr('stroke-width', 1.5)
+        .attr('opacity', 0.7);
+
+      // Endpoints
+      rulerG.append('circle').attr('cx', x1).attr('cy', y1).attr('r', 4).attr('fill', C.gold).attr('stroke', '#080B10').attr('stroke-width', 1.5);
+      rulerG.append('circle').attr('cx', x2).attr('cy', y2).attr('r', 4).attr('fill', C.gold).attr('stroke', '#080B10').attr('stroke-width', 1.5);
+
+      // Price label A
+      rulerG.append('text')
+        .attr('x', x1).attr('y', y1 - 10)
+        .attr('fill', C.gold).attr('font-family', 'JetBrains Mono, monospace')
+        .attr('font-size', '10px').attr('text-anchor', 'middle')
+        .text(fmtNum(r.price1, 6));
+
+      // Price label B
+      rulerG.append('text')
+        .attr('x', x2).attr('y', y2 - 10)
+        .attr('fill', C.gold).attr('font-family', 'JetBrains Mono, monospace')
+        .attr('font-size', '10px').attr('text-anchor', 'middle')
+        .text(fmtNum(r.price2, 6));
+
+      // Badge in the middle
+      var badgeText = (diff >= 0 ? '+' : '') + fmtNum(diff, 4) + ' (' + (pct >= 0 ? '+' : '') + pct + '%) · ' + r.bars + 'b';
+      var badgeW = badgeText.length * 6.5 + 16;
+      rulerG.append('rect')
+        .attr('x', midX - badgeW / 2).attr('y', midY - 22)
+        .attr('width', badgeW).attr('height', 22)
+        .attr('rx', 4).attr('fill', 'rgba(14,19,25,0.93)')
+        .attr('stroke', C.gold).attr('stroke-width', 1);
+      rulerG.append('text')
+        .attr('x', midX).attr('y', midY - 8)
+        .attr('fill', C.gold).attr('font-family', 'JetBrains Mono, monospace')
+        .attr('font-size', '10px').attr('text-anchor', 'middle').attr('font-weight', '600')
+        .text(badgeText);
+    });
+  }
+
+  var selectedRayIdx = -1;
+  function showRaySettings(idx) {
+    selectedRayIdx = idx;
+    var r = rayData[idx];
+    var panel = $('raySettings');
+    $('rayColor').value = r.color;
+    $('rayWidth').value = r.width;
+    $('rayText').value = r.text || '';
+    
+    // Use global event as d3 event
+    var e = window.event; 
+    panel.style.display = 'block';
+    panel.style.left = (e.clientX + 10) + 'px';
+    panel.style.top = (e.clientY + 10) + 'px';
+  }
+
+  $('rayApply').addEventListener('click', function() {
+    if (selectedRayIdx === -1) return;
+    var r = rayData[selectedRayIdx];
+    r.color = $('rayColor').value;
+    r.width = parseInt($('rayWidth').value) || 1;
+    r.text = $('rayText').value;
+    $('raySettings').style.display = 'none';
+    renderAll();
+  });
+
+  $('rayDel').addEventListener('click', function() {
+    if (selectedRayIdx === -1) return;
+    rayData.splice(selectedRayIdx, 1);
+    $('raySettings').style.display = 'none';
+    selectedRayIdx = -1;
+    renderAll();
+  });
+
+  document.addEventListener('mousedown', function(e) {
+    if (!e.target.closest('#raySettings') && !e.target.closest('#textSettings') && !e.target.__d3_event_source) {
+      $('raySettings').style.display = 'none';
+      $('textSettings').style.display = 'none';
+      selectedRayIdx = -1;
+      selectedTextIdx = -1;
+    }
+  });
+
+  function makeDraggable(handleId, panelId) {
+    var handle = $(handleId), panel = $(panelId);
+    if (!handle || !panel) return;
+    handle.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      var ox = e.clientX - panel.offsetLeft;
+      var oy = e.clientY - panel.offsetTop;
+      function mousemove(ev) {
+        panel.style.left = (ev.clientX - ox) + 'px';
+        panel.style.top = (ev.clientY - oy) + 'px';
+      }
+      document.addEventListener('mousemove', mousemove);
+      document.addEventListener('mouseup', function() {
+        document.removeEventListener('mousemove', mousemove);
+      }, { once: true });
+    });
+  }
+  makeDraggable('rayHandle', 'raySettings');
+  makeDraggable('txtHandle', 'textSettings');
+
+  var selectedTextIdx = -1;
+  function showTextSettings(idx) {
+    selectedTextIdx = idx;
+    var t = texts[idx];
+    var panel = $('textSettings');
+    $('txtText').value = t.text || '';
+    $('txtColor').value = t.color || C.gold;
+    $('txtSize').value = t.fontSize || 12;
+    
+    var e = window.event;
+    panel.style.display = 'block';
+    panel.style.left = (e.clientX + 10) + 'px';
+    panel.style.top = (e.clientY + 10) + 'px';
+  }
+
+  $('txtApply').addEventListener('click', function() {
+    if (selectedTextIdx === -1) return;
+    var t = texts[selectedTextIdx];
+    t.text = $('txtText').value;
+    t.color = $('txtColor').value;
+    t.fontSize = parseInt($('txtSize').value) || 12;
+    $('textSettings').style.display = 'none';
+    renderAll();
+  });
+
+  $('txtDel').addEventListener('click', function() {
+    if (selectedTextIdx === -1) return;
+    texts.splice(selectedTextIdx, 1);
+    $('textSettings').style.display = 'none';
+    selectedTextIdx = -1;
+    renderAll();
+  });
+
+  // ============================================================
+  // D3 CHART — INIT
+  // ============================================================
+
+  function initChart() {
+    if (svg) { svg.remove(); }
     var container = $('chartContainer');
+    container.innerHTML = '';
     var r = container.getBoundingClientRect();
     if (r.width === 0) {
       setTimeout(initChart, 100);
       return;
     }
 
-    chart = LightweightCharts.createChart(container, {
-      layout: { background: { type: 'solid', color: '#080B10' }, textColor: '#5C6570', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 },
-      grid: { vertLines: { color: '#1A1F29' }, horzLines: { color: 'rgba(28,33,40,0.3)' } },
-      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-      rightPriceScale: { borderVisible: false, autoScale: true, entireTextOnly: true, priceFormat: { type: 'custom', formatter: function(p) { return parseFloat(p.toFixed(6)).toString(); }, minMove: 0.01 } },
-      timeScale: { borderColor: '#1C2128', timeVisible: true, secondsVisible: false },
-      localization: { priceFormatter: function(p) { return parseFloat(p.toFixed(6)).toString(); } },
-      handleScroll: { vertTouchDrag: false },
+    var w = r.width;
+    var h = r.height;
+    chartWidth = w - margin.left - margin.right;
+    chartHeight = h - margin.top - margin.bottom;
+
+    svg = d3.select('#chartContainer')
+      .append('svg')
+      .attr('width', w)
+      .attr('height', h)
+      .style('display', 'block');
+
+    var defs = svg.append('defs');
+    defs.append('clipPath')
+      .attr('id', clipId)
+      .append('rect')
+      .attr('x', margin.left)
+      .attr('y', margin.top)
+      .attr('width', chartWidth)
+      .attr('height', chartHeight);
+
+    chartG = svg.append('g').attr('clip-path', 'url(#' + clipId + ')');
+    gridG = chartG.append('g').attr('class', 'grid');
+    volumeG = chartG.append('g').attr('class', 'volumes');
+    fractalG = chartG.append('g').attr('class', 'fractals');
+    bbG = chartG.append('g').attr('class', 'bb');
+    candleG = chartG.append('g').attr('class', 'candles');
+    smaG = chartG.append('g').attr('class', 'sma');
+    rsiG = chartG.append('g').attr('class', 'rsi');
+    rayG = chartG.append('g').attr('class', 'rays');
+    hLineG = chartG.append('g').attr('class', 'hlines');
+    rectG = chartG.append('g').attr('class', 'rects');
+    textG = chartG.append('g').attr('class', 'texts');
+    currentPriceLineG = chartG.append('g').attr('class', 'current-price-line');
+    rulerG = chartG.append('g').attr('class', 'ruler');
+
+    labelG = svg.append('g').attr('class', 'labels');
+    xAxisG = svg.append('g').attr('class', 'x-axis');
+    xAxisTimeLabel = xAxisG.append('g').attr('class', 'x-time-label')
+      .attr('transform', 'translate(0, -8)');
+    xAxisTimeLabel.append('rect')
+      .attr('fill', 'rgba(8,11,16,0.85)').attr('rx', 3)
+      .attr('height', 16);
+    xAxisTimeLabel.append('text')
+      .attr('fill', C.gold)
+      .attr('font-family', 'JetBrains Mono, monospace')
+      .attr('font-size', '10px')
+      .attr('text-anchor', 'middle')
+      .attr('dy', '1em')
+      .attr('x', 0);
+    yAxisG = svg.append('g').attr('class', 'y-axis');
+
+    yAxisG.on('wheel', function(event) {
+      event.preventDefault();
+      var delta = event.deltaY > 0 ? 1.1 : 0.9;
+      var d0 = yScale.domain()[0];
+      var d1 = yScale.domain()[1];
+      var center = (d0 + d1) / 2;
+      var halfRange = (d1 - d0) / 2 * delta;
+      yScale.domain([center - halfRange, center + halfRange]);
+      renderAll();
     });
 
-    candleSeries = chart.addCandlestickSeries({
-      upColor: '#16C784', downColor: '#EA3943',
-      borderDownColor: '#EA3943', borderUpColor: '#16C784',
-      wickDownColor: '#EA3943', wickUpColor: '#16C784',
-    });
+    var crossGroup = svg.append('g').attr('class', 'crosshair').style('display', 'none');
+    crossV = crossGroup.append('line')
+      .attr('stroke', '#5C6570').attr('stroke-width', 1).attr('stroke-dasharray', '3,3');
+    crossH = crossGroup.append('line')
+      .attr('stroke', '#5C6570').attr('stroke-width', 1).attr('stroke-dasharray', '3,3');
+    crossLabel = crossGroup.append('text')
+      .attr('fill', '#C8D0D8')
+      .attr('font-family', 'JetBrains Mono, monospace')
+      .attr('font-size', '11px').attr('font-weight', '700')
+      .attr('text-anchor', 'end');
 
-    // Indicator series (hidden by default, created on demand)
-    smaSeries = chart.addLineSeries({ color: '#F0B90B', lineWidth: 1, priceScaleId: 'right', lastValueVisible: true });
-    bbUpperSeries = chart.addLineSeries({ color: 'rgba(124,58,237,0.7)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, priceScaleId: 'right' });
-    bbMidSeries = chart.addLineSeries({ color: 'rgba(124,58,237,0.9)', lineWidth: 1, priceScaleId: 'right' });
-    bbLowerSeries = chart.addLineSeries({ color: 'rgba(124,58,237,0.7)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, priceScaleId: 'right' });
-    rsiSeries = chart.addLineSeries({ color: '#58a6ff', lineWidth: 1, priceScaleId: 'rsi', lastValueVisible: true });
+    xScaleOrig = d3.scaleTime().range([0, chartWidth]);
+    yScale = d3.scaleLinear();
+    yRsiScale = d3.scaleLinear().domain([0, 100]);
+    volumeScale = d3.scaleLinear();
+    xScale = xScaleOrig.copy();
 
-    // RSI pane
-    chart.priceScale('rsi').applyOptions({
-      scaleMargins: { top: 0.85, bottom: 0 },
-      visible: false,
-    });
+    var zoom = d3.zoom()
+      .scaleExtent([1, 20])
+      .on('zoom', function(event) {
+        xScale = event.transform.rescaleX(xScaleOrig);
+        renderAll();
+      });
 
-    // Crosshair with magnet snap
-    chart.subscribeCrosshairMove(function(param) {
-      if (!param.time || !param.seriesData || param.point === undefined) return;
-      var d = param.seriesData.get(candleSeries);
-      if (!d) return;
-      var price = d.close;
-      var time = d.time;
+    svg.call(zoom);
 
-      // Magnet snap crosshair to nearest OHLC
-      if (magnetActive && param.point) {
+    svg.on('mousemove', function(event) {
+      var coords = d3.pointer(event);
+      var mx = coords[0] - margin.left;
+      var my = coords[1] - margin.top;
+      if (mx < 0 || mx > chartWidth || my < 0 || my > chartHeight) {
+        svg.select('.crosshair').style('display', 'none');
+        $('crosshairInfo').style.display = 'none';
+        return;
+      }
+
+      var time = xScale.invert(mx);
+      var bisect = d3.bisector(function(d) { return d.time; }).left;
+      var idx = bisect(klineData, time);
+      var d = (idx >= 0 && idx < klineData.length) ? klineData[idx] : null;
+
+      var cx = margin.left + xScale(d ? d.time : time);
+      var cy;
+      var price;
+
+      if (magnetActive && d) {
         var ohlc = [d.open, d.high, d.low, d.close];
-        var mousePrice = param.point.price;
-        var best = ohlc[0], bestDist = Math.abs(ohlc[0] - mousePrice);
+        var rawPrice = yScale.invert(my);
+        var best = ohlc[0], bestDist = Math.abs(ohlc[0] - rawPrice);
         for (var k = 1; k < ohlc.length; k++) {
-          var dist = Math.abs(ohlc[k] - mousePrice);
+          var dist = Math.abs(ohlc[k] - rawPrice);
           if (dist < bestDist) { bestDist = dist; best = ohlc[k]; }
         }
         price = best;
+        cy = margin.top + yScale(price);
+      } else {
+        price = yScale.invert(my);
+        cy = my + margin.top;
       }
 
-      $('ohlcInfo').textContent = 'O: ' + parseFloat(d.open.toFixed(6)) + ' H: ' + parseFloat(d.high.toFixed(6)) + ' L: ' + parseFloat(d.low.toFixed(6)) + ' C: ' + parseFloat(d.close.toFixed(6));
+      crossV.attr('x1', cx).attr('y1', margin.top).attr('x2', cx).attr('y2', margin.top + chartHeight);
+      crossH.attr('x1', margin.left).attr('y1', cy).attr('x2', margin.left + chartWidth).attr('y2', cy);
+      crossLabel.attr('x', margin.left + chartWidth - 4).attr('y', cy - 4).text(fmtNum(price, 6));
+      svg.select('.crosshair').style('display', null);
+
+      if (d) {
+        $('ohlcInfo').textContent = 'O: ' + fmtNum(d.open, 6) + ' H: ' + fmtNum(d.high, 6) + ' L: ' + fmtNum(d.low, 6) + ' C: ' + fmtNum(d.close, 6);
+      } else {
+        $('ohlcInfo').textContent = 'O: — H: — L: — C: —';
+      }
+
       var crossInfoEl = $('crosshairInfo');
       crossInfoEl.style.display = 'block';
-      var date = new Date(d.time * 1000);
-      crossInfoEl.textContent = date.getDate() + '/' + (date.getMonth() + 1) + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0') + ' | ' + (magnetActive ? '>> ' : '') + parseFloat(price.toFixed(6));
+      var date = new Date(time * 1000);
+      crossInfoEl.textContent = date.getDate() + '/' + (date.getMonth() + 1) + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0') + ' | ' + (magnetActive ? '>> ' : '') + fmtNum(price, 6);
+
+      if (xAxisTimeLabel) {
+        var dateStr = date.getDate() + '/' + (date.getMonth() + 1) + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
+        xAxisTimeLabel.attr('transform', 'translate(' + (cx - margin.left) + ', -8)');
+        xAxisTimeLabel.select('text').text(dateStr);
+        var tw = dateStr.length * 6.5 + 10;
+        xAxisTimeLabel.select('rect')
+          .attr('x', -tw / 2).attr('width', tw);
+      }
+
+       // Ruler preview
+        if (drawMode === 'ruler' && pendingRuler) {
+          rulerG.selectAll('.ruler-preview').remove();
+          var x1 = pendingRuler.x1, y1 = pendingRuler.y1;
+          var x2 = mx + margin.left, y2 = my + margin.top;
+          var diff = price - pendingRuler.price1;
+          var pct = (diff / pendingRuler.price1 * 100);
+
+          rulerG.append('line')
+            .attr('class', 'ruler-preview')
+            .attr('x1', x1).attr('x2', x2).attr('y1', y1).attr('y2', y2)
+            .attr('stroke', C.gold).attr('stroke-width', 1.5).attr('opacity', 0.5);
+
+          rulerG.append('circle')
+            .attr('class', 'ruler-preview')
+            .attr('cx', x1).attr('cy', y1).attr('r', 4).attr('fill', C.gold).attr('stroke', '#080B10').attr('stroke-width', 1.5);
+
+          var pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(3) + '%';
+          var diffStr = (diff >= 0 ? '+' : '') + fmtNum(diff, 4);
+          var labelText = diffStr + ' (' + pctStr + ')';
+
+          var lblX = x2 + 12, lblY = y2 - 10;
+          if (x2 > chartWidth * 0.7) { lblX = x2 - 12; }
+
+          rulerG.append('text')
+            .attr('class', 'ruler-preview')
+            .attr('x', lblX).attr('y', lblY)
+            .attr('fill', C.gold).attr('font-family', 'JetBrains Mono, monospace')
+            .attr('font-size', '11px').attr('font-weight', '700')
+            .attr('text-anchor', (x2 > x1 ? 'start' : 'end'))
+            .text(labelText);
+        }
+
+       if (drawMode === 'rect' && pendingRect) {
+         rectG.selectAll('.rect-preview').remove();
+         var rx1 = margin.left + xScale(pendingRect.time1);
+         var ry1 = margin.top + yScale(pendingRect.price1);
+         var rx2 = mx + margin.left;
+         var ry2 = my + margin.top;
+         rectG.append('rect')
+           .attr('class', 'rect-preview')
+           .attr('x', Math.min(rx1, rx2))
+           .attr('y', Math.min(ry1, ry2))
+           .attr('width', Math.abs(rx2 - rx1))
+           .attr('height', Math.abs(ry2 - ry1))
+           .attr('fill', 'rgba(240,185,11,0.1)')
+           .attr('stroke', C.gold)
+           .attr('stroke-width', 1)
+           .attr('stroke-dasharray', '4,2');
+       }
     });
 
-    // Click for drawing tools
-    chart.subscribeClick(function(param) {
-      if (!param.time || param.point === undefined) return;
-      handleChartClick(param);
+    svg.on('mouseleave', function() {
+      svg.select('.crosshair').style('display', 'none');
+      $('crosshairInfo').style.display = 'none';
+      rulerG.selectAll('.ruler-preview').remove();
+    });
+
+    svg.on('click', function(event) {
+      if (drawMode === 'cursor') return;
+      var coords = d3.pointer(event);
+      var mx = coords[0] - margin.left;
+      var my = coords[1] - margin.top;
+      if (mx < 0 || mx > chartWidth || my < 0 || my > chartHeight) return;
+
+      var time = xScale.invert(mx);
+      var price = yScale.invert(my);
+
+      var bisect = d3.bisector(function(d) { return d.time; }).left;
+      var idx = bisect(klineData, time);
+      if (idx >= klineData.length) idx = klineData.length - 1;
+      if (idx < 0) idx = 0;
+      var d = klineData[idx];
+
+      handleChartClick(time, price, d);
     });
 
     window.addEventListener('resize', function() {
-      if (chart && container) {
-        var rr = container.getBoundingClientRect();
-        chart.resize(rr.width, rr.height);
-      }
+      var rr = container.getBoundingClientRect();
+      if (rr.width === 0) return;
+      svg.attr('width', rr.width).attr('height', rr.height);
+      chartWidth = rr.width - margin.left - margin.right;
+      chartHeight = rr.height - margin.top - margin.bottom;
+      svg.select('defs #' + clipId + ' rect')
+        .attr('width', chartWidth)
+        .attr('height', chartHeight);
+      xScaleOrig.range([0, chartWidth]);
+      yScale.range([chartHeight, 0]);
+      yRsiScale.range([chartHeight, chartHeight * 0.85]);
+      xScale.range([0, chartWidth]);
+      xScaleOrig.domain(xScale.domain());
+      renderAll();
     });
 
     chartReady = true;
@@ -802,121 +1633,64 @@
   }
 
   function setChartData() {
-    if (!chartReady || !candleSeries || klineData.length === 0) return;
-    candleSeries.setData(klineData);
-    chart.timeScale().fitContent();
-    updateIndicators();
+    if (!chartReady || klineData.length === 0) return;
+    renderAll();
+    if (showFractals) { try { drawFractals(); } catch(e) {} }
   }
 
-  function updateIndicators() {
-    if (!chartReady) return;
-    // SMA
-    if (showSMA && klineData.length >= 20) {
-      var smaData = calcSMA(klineData, 20);
-      smaSeries.setData(smaData.map(function(d) { return { time: d.time, value: d.value }; }));
-    } else {
-      smaSeries.setData([]);
-    }
-    // BB
-    if (showBB && klineData.length >= 20) {
-      var bb = calcBB(klineData, 20, 2);
-      bbUpperSeries.setData(bb.map(function(d) { return { time: d.time, value: d.upper }; }));
-      bbMidSeries.setData(bb.map(function(d) { return { time: d.time, value: d.mid }; }));
-      bbLowerSeries.setData(bb.map(function(d) { return { time: d.time, value: d.lower }; }));
-    } else {
-      bbUpperSeries.setData([]); bbMidSeries.setData([]); bbLowerSeries.setData([]);
-    }
-    // RSI
-    if (showRSI && klineData.length >= 14) {
-      var rsiData = calcRSI(klineData, 14);
-      rsiSeries.setData(rsiData.map(function(d) { return { time: d.time, value: d.value }; }));
-    } else {
-      rsiSeries.setData([]);
-    }
-  }
+  // Таймфреймы
+  document.querySelectorAll('.tf-btn').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+      var tf = this.textContent.trim();
+      var tfMap = { '1м': '1m', '5м': '5m', '15м': '15m', '30м': '30m', '1ч': '1h', '2ч': '2h', '4ч': '4h', '1д': '1d', '1н': '1w', '1М': '1M' };
+      var interval = tfMap[tf];
+      if (!interval || interval === activeInterval) return;
 
-  function indicatorsApplyVisibility() {
-    if (!chart) return;
-    smaSeries.applyOptions({ visible: showSMA });
-    bbUpperSeries.applyOptions({ visible: showBB });
-    bbMidSeries.applyOptions({ visible: showBB });
-    bbLowerSeries.applyOptions({ visible: showBB });
-    rsiSeries.applyOptions({ visible: showRSI });
-    chart.priceScale('rsi').applyOptions({ visible: showRSI });
-    updateIndicators();
-  }
+      document.querySelectorAll('.tf-btn').forEach(function(b) { b.classList.remove('active'); });
+      this.classList.add('active');
 
-  function renderChart() {
-    if (!chartReady) return;
-    setChartData();
-  }
+      activeInterval = interval;
+      clearPriceLines(); clearRaySeries(); clearFractals();
+      await loadChartData();
+      connectKlineWS();
+      updateInfoBlocks();
+    });
+  });
 
+  // ============================================================
+  // TIME FRAME BUTTONS
   // ============================================================
   // DRAWING TOOLS
   // ============================================================
-  var priceLines = [];
-  var raySeriesList = [];   // line series for right-only rays
-  var fractalHighLines = [];
-  var fractalLowLines = [];
-  var fractalSeriesList = [];
 
   function clearPriceLines() {
-    priceLines.forEach(function(pl) {
-      try { candleSeries.removePriceLine(pl); } catch(e) {}
-    });
-    priceLines = [];
-  }
-
-  function clearRaySeries() {
-    raySeriesList.forEach(function(s) {
-      try { chart.removeSeries(s); } catch(e) {}
-    });
-    raySeriesList = [];
+    priceLineData = [];
+    renderAll();
   }
 
   function clearFractals() {
-    fractalSeriesList.forEach(function(s) {
-      try { chart.removeSeries(s); } catch(e) {}
-    });
-    fractalSeriesList = [];
-    fractalHighLines = [];
-    fractalLowLines = [];
+    fractalLinesData = [];
+    renderAll();
   }
 
-  function addRayRight(price, color, startTime) {
-    if (!chart || klineData.length === 0) return;
-    var lastTime = klineData[klineData.length - 1].time;
-    var s = chart.addLineSeries({
-      color: color, lineWidth: 1.5, priceScaleId: 'right',
-      lastValueVisible: true, priceLineVisible: false,
-    });
-    s.setData([
-      { time: startTime, value: price },
-      { time: lastTime, value: price }
-    ]);
-    raySeriesList.push(s);
-    return s;
+  function addRayRight(time, price, color) {
+    rayData.push({ time: time, price: price, color: color || C.orange, width: 1, text: '' });
+    renderAll();
+  }
+
+  function clearRaySeries() {
+    rayData = [];
+    renderAll();
   }
 
   function addPriceLine(price, color, title) {
-    if (!candleSeries) return;
-    var pl = candleSeries.createPriceLine({
-      price: price, color: color || C.purple,
-      lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed,
-      axisLabelVisible: true, title: title || price.toString(),
-    });
-    priceLines.push(pl);
-    return pl;
+    priceLineData.push({ price: price, color: color || C.purple, title: title || price.toString() });
+    renderAll();
   }
 
-  function handleChartClick(param) {
-    var d = param.seriesData.get(candleSeries);
+  function handleChartClick(time, price, d) {
     if (!d) return;
 
-    var time = param.time;
-    var price = d.close;
-
-    // Magnet snap — find nearest OHLC
     if (magnetActive) {
       var ohlc = [d.open, d.high, d.low, d.close];
       var best = ohlc[0], bestDist = Math.abs(ohlc[0] - price);
@@ -933,56 +1707,73 @@
     }
 
     if (drawMode === 'ray') {
-      if (!pendingRuler) {
-        pendingRuler = { price1: price, time1: time };
-        addPriceLine(price, C.orange, 'A: ' + price.toString());
+      addRayRight(time, price, C.orange);
+      setDrawMode('cursor');
+      return;
+    }
+
+    if (drawMode === 'rect') {
+      if (!pendingRect) {
+        pendingRect = { price1: price, time1: time };
       } else {
-        var pct = ((price - pendingRuler.price1) / pendingRuler.price1 * 100);
-        rulers.push({ price1: pendingRuler.price1, price2: price, pct: pct });
-        addRayRight(pendingRuler.price1, C.orange, pendingRuler.time1);
-        addPriceLine(price, C.orange, 'B: ' + price.toString() + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)');
-        pendingRuler = null;
+        rects.push({ price1: pendingRect.price1, time1: pendingRect.time1, price2: price, time2: time });
+        pendingRect = null;
+        renderAll();
       }
       return;
     }
 
-    if (drawMode === 'cursor' && !pendingRuler) {
-      pendingRuler = { price1: price, time1: time };
-      addPriceLine(price, C.orange, 'A: ' + price.toString());
-    } else if (pendingRuler && drawMode === 'cursor') {
-      var pct2 = ((price - pendingRuler.price1) / pendingRuler.price1 * 100);
-      rulers.push({ price1: pendingRuler.price1, price2: price, pct: pct2 });
-      addRayRight(pendingRuler.price1, C.orange, pendingRuler.time1);
-      addPriceLine(price, C.orange, 'B: ' + price.toString() + ' (' + (pct2 >= 0 ? '+' : '') + pct2.toFixed(2) + '%)');
-      pendingRuler = null;
+    if (drawMode === 'text') {
+      texts.push({ time: time, price: price, text: 'Метка', color: C.gold, fontSize: 12 });
+      renderAll();
+      setDrawMode('cursor');
+      return;
+    }
+
+    if (drawMode === 'ruler') {
+      if (!pendingRuler) {
+        pendingRuler = { price1: price, time1: time, x1: xScale(time) + margin.left, y1: yScale(price) + margin.top };
+      } else {
+        var barIdx1 = klineData.findIndex(function(k) { return k.time === pendingRuler.time1; });
+        var barIdx2 = klineData.findIndex(function(k) { return k.time === d.time; });
+        var barCount = Math.abs(barIdx2 - barIdx1);
+        rulerLines.push({
+          price1: pendingRuler.price1, price2: price,
+          time1: pendingRuler.time1, time2: d.time,
+          bars: barCount
+        });
+        pendingRuler = null;
+        renderAll();
+        setDrawMode('cursor');
+      }
+      return;
     }
   }
 
   // ============================================================
   // FRACTALS (Williams, step=3)
   // ============================================================
-  function calcFractals() {
-    if (klineData.length < 7) return { highs: [], lows: [] };
+  function calcFractals(data) {
+    data = data || klineData;
+    if (data.length < 7) return { highs: [], lows: [] };
     var highs = [], lows = [];
-    for (var i = 3; i < klineData.length - 3; i++) {
-      var d = klineData[i];
-      var isHigh = d.high >= klineData[i-1].high && d.high >= klineData[i-2].high && d.high >= klineData[i-3].high &&
-                   d.high >= klineData[i+1].high && d.high >= klineData[i+2].high && d.high >= klineData[i+3].high;
+    for (var i = 3; i < data.length - 3; i++) {
+      var d = data[i];
+      var isHigh = d.high >= data[i-1].high && d.high >= data[i-2].high && d.high >= data[i-3].high &&
+                   d.high >= data[i+1].high && d.high >= data[i+2].high && d.high >= data[i+3].high;
       if (isHigh) {
-        // Filter: remove if price crossed above this level after it formed
         var touched = false;
-        for (var j = i + 1; j < klineData.length; j++) {
-          if (klineData[j].high >= d.high || klineData[j].close >= d.high) { touched = true; break; }
+        for (var j = i + 1; j < data.length; j++) {
+          if (data[j].high >= d.high || data[j].close >= d.high) { touched = true; break; }
         }
         if (!touched) highs.push({ time: d.time, value: d.high, idx: i });
       }
-      var isLow = d.low <= klineData[i-1].low && d.low <= klineData[i-2].low && d.low <= klineData[i-3].low &&
-                  d.low <= klineData[i+1].low && d.low <= klineData[i+2].low && d.low <= klineData[i+3].low;
+      var isLow = d.low <= data[i-1].low && d.low <= data[i-2].low && d.low <= data[i-3].low &&
+                  d.low <= data[i+1].low && d.low <= data[i+2].low && d.low <= data[i+3].low;
       if (isLow) {
-        // Filter: remove if price crossed below this level after it formed
         var touchedL = false;
-        for (var k = i + 1; k < klineData.length; k++) {
-          if (klineData[k].low <= d.low || klineData[k].close <= d.low) { touchedL = true; break; }
+        for (var k = i + 1; k < data.length; k++) {
+          if (data[k].low <= d.low || data[k].close <= d.low) { touchedL = true; break; }
         }
         if (!touchedL) lows.push({ time: d.time, value: d.low, idx: i });
       }
@@ -990,42 +1781,31 @@
     return { highs: highs, lows: lows };
   }
 
-  function drawFractals() {
+  async function fetchFractalKlines() {
+    var higherTF = fractalTFMap[activeInterval] || '1d';
+    if (fractalKlinesTF === higherTF && fractalKlines) return fractalKlines;
+    var r = await fetch(BINANCE_REST + '/fapi/v1/klines?symbol=' + activeCoin + '&interval=' + higherTF + '&limit=200');
+    var raw = await r.json();
+    fractalKlines = raw.map(function(k) { return { time: Math.floor(k[0] / 1000), open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] }; });
+    fractalKlinesTF = higherTF;
+    return fractalKlines;
+  }
+
+  async function drawFractals() {
     try {
-      clearFractals();
-      if (klineData.length < 7 || !chart || !candleSeries) return;
-      var f = calcFractals();
-      var lastTime = klineData[klineData.length - 1].time;
+      fractalLinesData = [];
+      if (!chartReady || klineData.length === 0) return;
+      var data = await fetchFractalKlines();
+      if (!data || data.length < 7) { renderAll(); return; }
+      var f = calcFractals(data);
 
       f.highs.forEach(function(h) {
-        var s = chart.addLineSeries({
-          color: 'rgba(234,57,67,0.5)',
-          lineWidth: 1,
-          priceScaleId: 'right',
-          lastValueVisible: true,
-          priceLineVisible: false,
-        });
-        s.setData([
-          { time: h.time, value: h.value },
-          { time: lastTime, value: h.value }
-        ]);
-        fractalSeriesList.push(s);
+        fractalLinesData.push({ time: h.time, value: h.value, isHigh: true });
       });
-
       f.lows.forEach(function(l) {
-        var s = chart.addLineSeries({
-          color: 'rgba(22,199,132,0.5)',
-          lineWidth: 1,
-          priceScaleId: 'right',
-          lastValueVisible: true,
-          priceLineVisible: false,
-        });
-        s.setData([
-          { time: l.time, value: l.value },
-          { time: lastTime, value: l.value }
-        ]);
-        fractalSeriesList.push(s);
+        fractalLinesData.push({ time: l.time, value: l.value, isHigh: false });
       });
+      renderAll();
     } catch(e) {}
   }
 
@@ -1035,6 +1815,7 @@
   function setDrawMode(mode) {
     drawMode = mode;
     pendingRuler = null;
+    pendingRect = null;
     document.querySelectorAll('.draw-btn').forEach(function(b) { b.classList.remove('active'); });
     var btnId = 'draw' + mode.charAt(0).toUpperCase() + mode.slice(1);
     var btnEl = $(btnId);
@@ -1046,34 +1827,28 @@
   $('drawHLine').addEventListener('click', function() { setDrawMode('hline'); });
   $('drawRay').addEventListener('click', function() { setDrawMode('ray'); });
   $('drawRect').addEventListener('click', function() { setDrawMode('rect'); });
+  $('drawRuler').addEventListener('click', function() { setDrawMode('ruler'); });
+  $('drawText').addEventListener('click', function() { setDrawMode('text'); });
   $('drawMagnet').addEventListener('click', function() {
     magnetActive = !magnetActive;
     $('drawMagnet').classList.toggle('active', magnetActive);
-    if (magnetActive) $('drawMagnet').style.color = C.gold;
-    else $('drawMagnet').style.color = C.purple;
+    $('drawMagnet').style.color = magnetActive ? C.gold : C.purple;
   });
 
   $('drawEraser').addEventListener('click', function() {
     rulers = [];
-    hLines = [];
+    hLinesArr = [];
+    rulerLines = [];
     pendingRuler = null;
+    pendingRect = null;
+    rects = [];
+    texts = [];
+    $('raySettings').style.display = 'none';
+    $('textSettings').style.display = 'none';
+    selectedRayIdx = -1;
+    selectedTextIdx = -1;
     clearPriceLines();
     clearRaySeries();
-    clearFractals();
-  });
-
-  $('drawFractal').addEventListener('click', function() {
-    if (fractalSeriesList.length > 0) {
-      clearFractals();
-      $('drawFractal').classList.remove('active');
-      $('drawFractal').style.color = C.orange;
-    } else {
-      try { drawFractals(); } catch(e) {}
-      if (fractalSeriesList.length > 0) {
-        $('drawFractal').classList.add('active');
-        $('drawFractal').style.color = C.gold;
-      }
-    }
   });
 
   // ============================================================
@@ -1088,17 +1863,97 @@
     $('indMenu').style.display = 'none';
   });
   $('indMenu').addEventListener('click', function(e) { e.stopPropagation(); });
-  $('indBB').addEventListener('change', function() {
-    showBB = this.checked;
+  $('btnBB').addEventListener('click', function() {
+    showBB = !showBB;
     indicatorsApplyVisibility();
+    renderIndBadge();
+    this.classList.toggle('active', showBB);
   });
-  $('indSMA').addEventListener('change', function() {
-    showSMA = this.checked;
+  $('btnSMA').addEventListener('click', function() {
+    showSMA = !showSMA;
     indicatorsApplyVisibility();
+    renderIndBadge();
+    this.classList.toggle('active', showSMA);
   });
-  $('indRSI').addEventListener('change', function() {
-    showRSI = this.checked;
+  $('btnRSI').addEventListener('click', function() {
+    showRSI = !showRSI;
     indicatorsApplyVisibility();
+    renderIndBadge();
+    this.classList.toggle('active', showRSI);
+  });
+  $('btnFractal').addEventListener('click', function() {
+    showFractals = !showFractals;
+    if (showFractals) { try { drawFractals(); } catch(e) {} }
+    else { clearFractals(); }
+    renderIndBadge();
+    this.classList.toggle('active', showFractals);
+  });
+
+  var smaPeriod = 20, bbPeriod = 20, bbMult = 2, rsiPeriod = 14;
+
+  function renderIndBadge() {
+    var badge = $('indBadge');
+    if (!badge) return;
+    var items = [];
+    if (showSMA) items.push({ id: 'sma', label: 'SMA ' + smaPeriod });
+    if (showBB) items.push({ id: 'bb', label: 'BB ' + bbPeriod + ',' + bbMult });
+    if (showRSI) items.push({ id: 'rsi', label: 'RSI ' + rsiPeriod });
+    if (showFractals) items.push({ id: 'fractal', label: 'Авто-уровни' });
+    badge.innerHTML = items.map(function(it) {
+      return '<span class="ind-badge-item" data-ind="' + it.id + '">' + it.label + '</span>';
+    }).join('');
+    
+    $('btnSMA').classList.toggle('active', showSMA);
+    $('btnBB').classList.toggle('active', showBB);
+    $('btnRSI').classList.toggle('active', showRSI);
+    $('btnFractal').classList.toggle('active', showFractals);
+
+    badge.querySelectorAll('.ind-badge-item').forEach(function(el) {
+      el.addEventListener('click', function(e) { e.stopPropagation(); openIndSettings(el.dataset.ind); });
+    });
+  }
+
+  function openIndSettings(indId) {
+    var popup = $('indSettings');
+    if (!popup) return;
+    var html = '';
+    if (indId === 'sma') {
+      html = '<label>Период SMA <input type="number" id="setSmaP" value="' + smaPeriod + '" min="2" max="500"></label>';
+      html += '<div class="btn-row"><button id="setApply">Применить</button><button id="setCancel">Отмена</button></div>';
+    } else if (indId === 'bb') {
+      html = '<label>Период BB <input type="number" id="setBbP" value="' + bbPeriod + '" min="2" max="500"></label>';
+      html += '<label>Множитель <input type="number" id="setBbM" value="' + bbMult + '" min="0.1" max="10" step="0.1"></label>';
+      html += '<div class="btn-row"><button id="setApply">Применить</button><button id="setCancel">Отмена</button></div>';
+    } else if (indId === 'rsi') {
+      html = '<label>Период RSI <input type="number" id="setRsiP" value="' + rsiPeriod + '" min="2" max="500"></label>';
+      html += '<div class="btn-row"><button id="setApply">Применить</button><button id="setCancel">Отмена</button></div>';
+    } else {
+      popup.style.display = 'none'; return;
+    }
+    popup.innerHTML = html;
+    popup.style.display = 'block';
+    popup._indId = indId;
+    var btnApply = $('setApply');
+    var btnCancel = $('setCancel');
+    if (btnApply) btnApply.addEventListener('click', function() { applyIndSettings(popup._indId); });
+    if (btnCancel) btnCancel.addEventListener('click', function() { popup.style.display = 'none'; });
+  }
+
+  function applyIndSettings(indId) {
+    var popup = $('indSettings');
+    if (indId === 'sma') { smaPeriod = parseInt($('setSmaP').value) || 20; }
+    else if (indId === 'bb') { bbPeriod = parseInt($('setBbP').value) || 20; bbMult = parseFloat($('setBbM').value) || 2; }
+    else if (indId === 'rsi') { rsiPeriod = parseInt($('setRsiP').value) || 14; }
+    popup.style.display = 'none';
+    if (showSMA || showBB || showRSI) indicatorsApplyVisibility();
+    renderIndBadge();
+  }
+
+  document.addEventListener('click', function(e) {
+    var s = $('indSettings');
+    if (s && s.style.display === 'block' && !s.contains(e.target) && !e.target.closest('.ind-badge-item')) {
+      s.style.display = 'none';
+    }
   });
 
   // ============================================================
@@ -1111,19 +1966,20 @@
       btn.classList.add('active');
       btn.style.background = '';
       btn.style.color = '';
-      // Highlight 1д
       var tf = tfMap[btn.textContent.trim()] || '1d';
       if (tf === '1d') { btn.style.background = 'var(--border)'; btn.style.color = 'var(--text)'; }
       activeInterval = tf;
-      rulers = []; hLines = []; pendingRuler = null;
+      rulers = []; hLinesArr = []; pendingRuler = null;
       clearPriceLines(); clearRaySeries(); clearFractals();
       await loadChartData();
       connectKlineWS();
     });
   });
-  // Initial 1д highlight
+
+  setInterval(fetchAllTickers, 2000);
+
   document.querySelectorAll('.tf-btn').forEach(function(b) {
-    if (b.textContent.trim() === '1д') {
+    if (b.textContent.trim() === '5м') {
       b.classList.add('active');
       b.style.background = 'var(--border)';
       b.style.color = 'var(--text)';
@@ -1144,7 +2000,8 @@
       priceDecimals = getDec(activeCoin);
       clearPriceLines();
       clearRaySeries();
-      rulers = []; hLines = []; pendingRuler = null;
+      fractalKlines = null; fractalKlinesTF = null;
+      rulers = []; hLinesArr = []; pendingRuler = null;
       if (chartReady) {
         setChartData();
       } else {
@@ -1160,9 +2017,9 @@
   // INIT
   // ============================================================
   async function init() {
+    console.log('[INIT] Starting...');
     $('statusText').textContent = 'Загрузка списка монет...';
 
-    // 1. Load all symbols from exchangeInfo
     try {
       allSymbols = await fetchExchangeInfo();
       $('statusText').textContent = 'Загружено ' + allSymbols.length + ' инструментов';
@@ -1170,10 +2027,15 @@
       allSymbols = [];
     }
 
-    // 2. Load all tickers
     try {
       tickersData = await fetchAllTickers();
       $('statusText').textContent = 'Тикеры: ' + tickersData.length + ' монет';
+      // Sort by CH24h descending (default) and pick the top mover
+      tickersData.sort(function(a, b) {
+        var vA = changes24h[a.symbol] != null ? changes24h[a.symbol] : a.ch;
+        var vB = changes24h[b.symbol] != null ? changes24h[b.symbol] : b.ch;
+        return vB - vA;
+      });
       activeCoin = tickersData.length > 0 ? tickersData[0].symbol : 'BTCUSDT';
     } catch(e) {
       tickersData = [];
@@ -1183,20 +2045,15 @@
     $('symDisplay').textContent = activeCoin;
     $('navSym').textContent = activeCoin;
 
-    // 3. Load chart
     await loadChartData();
 
-    // 4. Connect WebSocket
     connectPriceWS();
     connectKlineWS();
 
-    // 5. Load NATR in background for ALL coins
     loadAllNATR();
-
-    // 6. Render coin table
     renderCoinTable();
+    console.log('[INIT] Complete. activeCoin=' + activeCoin + ' activeInterval=' + activeInterval);
 
-    // Auto-refresh tickers every 30s
     setInterval(async function() {
       try {
         await fetchAllTickers();

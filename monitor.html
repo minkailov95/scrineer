@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scrineer — Мониторинг</title>
+  <style>
+    :root {
+      --bg: #080B10; --surface: #0E1319; --surface2: #12161E;
+      --border: #1C2128;
+      --text: #C8D0D8; --textDim: #5C6570;
+      --green: #16C784; --red: #EA3943; --gold: #F0B90B; --orange: #F7931A;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'JetBrains Mono', 'Inter', monospace;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 16px; font-size: 12px;
+    }
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    .header h1 { font-size: 16px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+    .status-badge {
+      display: flex; align-items: center; gap: 8px; padding: 6px 14px;
+      border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    }
+    .status-badge.ok { background: rgba(22,199,132,0.12); color: var(--green); border: 1px solid rgba(22,199,132,0.25); }
+    .status-badge.degraded { background: rgba(240,185,11,0.12); color: var(--gold); border: 1px solid rgba(240,185,11,0.25); }
+    .status-badge.error { background: rgba(234,57,67,0.12); color: var(--red); border: 1px solid rgba(234,57,67,0.25); }
+    .status-badge.initializing { background: rgba(92,101,112,0.12); color: var(--textDim); border: 1px solid rgba(92,101,112,0.25); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .status-dot.ok { background: var(--green); }
+    .status-dot.degraded { background: var(--gold); }
+    .status-dot.error { background: var(--red); }
+    .status-dot.initializing { background: var(--textDim); }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px;
+    }
+    .card-title {
+      font-size: 9px; font-weight: 600; color: var(--textDim);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+    }
+    .check-summary { display: flex; gap: 16px; flex-wrap: wrap; }
+    .check-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: 4px;
+      background: var(--surface2); font-size: 11px;
+    }
+    .check-item.pass { color: var(--green); }
+    .check-item.fail { color: var(--red); }
+    .check-icon { font-size: 14px; }
+    .log-section { margin-bottom: 16px; }
+    .log-list { list-style: none; max-height: 400px; overflow-y: auto; }
+    .log-item {
+      padding: 8px 10px; border-bottom: 1px solid rgba(28,33,40,0.5);
+      font-size: 11px; display: flex; gap: 10px; align-items: flex-start;
+    }
+    .log-item:hover { background: var(--surface2); }
+    .log-time { color: var(--textDim); white-space: nowrap; min-width: 80px; font-size: 10px; }
+    .log-source {
+      padding: 1px 6px; border-radius: 3px; font-size: 9px;
+      font-weight: 600; white-space: nowrap; text-transform: uppercase;
+    }
+    .log-source.browser { background: rgba(234,57,67,0.15); color: var(--red); }
+    .log-source.bot { background: rgba(240,185,11,0.15); color: var(--gold); }
+    .log-msg { word-break: break-all; flex: 1; }
+    .log-type { font-weight: 700; min-width: 50px; }
+    .log-type.error { color: var(--red); }
+    .log-type.warning { color: var(--orange); }
+
+    .check-history {
+      max-height: 300px; overflow-y: auto;
+    }
+    .check-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 10px; border-bottom: 1px solid rgba(28,33,40,0.3);
+      font-size: 10px;
+    }
+    .check-row.pass { border-left: 2px solid var(--green); }
+    .check-row.fail { border-left: 2px solid var(--red); }
+    .check-time { color: var(--textDim); min-width: 70px; }
+
+    .bar { margin-top: 4px; }
+    .bar-item {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 4px; font-size: 10px;
+    }
+    .bar-label { min-width: 55px; color: var(--textDim); }
+    .bar-fill { height: 4px; border-radius: 2px; background: var(--border); flex: 1; overflow: hidden; }
+    .bar-fill-inner { height: 100%; border-radius: 2px; transition: width 0.3s; }
+    .empty-state { color: var(--textDim); text-align: center; padding: 30px; font-size: 11px; }
+    .refresh-info { font-size: 10px; color: var(--textDim); text-align: right; margin-top: 12px; }
+  </style>
+</head>
+<body>
+<div class="header">
+  <h1>Scrineer · Монитор</h1>
+  <div id="statusBadge" class="status-badge initializing">
+    <span class="status-dot initializing"></span>
+    <span id="statusText">Загрузка...</span>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="card-title">Последняя проверка</div>
+    <div id="lastCheck" class="check-summary">
+      <span style="color:var(--textDim);">Нет данных</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Статистика</div>
+    <div class="bar">
+      <div class="bar-item">
+        <span class="bar-label">Всего</span>
+        <span id="statTotal" style="font-weight:700;">—</span>
+        <div class="bar-fill"><div class="bar-fill-inner" style="width:0%;background:var(--green);"></div></div>
+      </div>
+      <div class="bar-item">
+        <span class="bar-label">Ошибок</span>
+        <span id="statFailed" style="font-weight:700;color:var(--red);">—</span>
+        <div class="bar-fill"><div id="statBar" class="bar-fill-inner" style="width:0%;background:var(--red);"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card log-section">
+  <div class="card-title">Ошибки (<span id="errCount">0</span>)</div>
+  <ul class="log-list" id="errorList">
+    <li class="empty-state">Ошибок нет</li>
+  </ul>
+</div>
+
+<div class="card log-section">
+  <div class="card-title">Предупреждения (<span id="warnCount">0</span>)</div>
+  <ul class="log-list" id="warnList">
+    <li class="empty-state">Предупреждений нет</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="card-title">История проверок (последние 20)</div>
+  <div class="check-history" id="checkHistory">
+    <div class="empty-state">Нет данных</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Наблюдение за свечами (5м)</div>
+  <div id="candleWatchdog" style="font-size:11px;">
+    <span style="color:var(--textDim);">Загрузка...</span>
+  </div>
+</div>
+
+<div class="refresh-info">
+  Автообновление: каждые 5 секунд · Последнее: <span id="refreshTime">—</span>
+</div>
+
+<script>
+(function() {
+  'use strict';
+  var $ = function(id) { return document.getElementById(id); };
+
+  var STATUS_MAP = {
+    ok: 'OK', degraded: 'DEGRADED', error: 'ERROR', initializing: 'INIT', observing_candles: 'НАБЛЮДЕНИЕ'
+  };
+
+  async function loadResults() {
+    try {
+      var r = await fetch('test_results.json?' + Date.now());
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      var data = await r.json();
+      render(data);
+    } catch(e) {
+      $('statusBadge').className = 'status-badge error';
+      $('statusText').textContent = 'Нет данных';
+      $('statusBadge').querySelector('.status-dot').className = 'status-dot error';
+    }
+    $('refreshTime').textContent = new Date().toLocaleTimeString();
+  }
+
+  function render(data) {
+    // Статус
+    var status = data.current_status || 'unknown';
+    var label = STATUS_MAP[status] || status.toUpperCase();
+    $('statusBadge').className = 'status-badge ' + status;
+    $('statusBadge').querySelector('.status-dot').className = 'status-dot ' + status;
+    $('statusText').textContent = label;
+
+    // Первая проверка загрузки если нет данных
+    if (!data.last_check) {
+      $('lastCheck').innerHTML = '<span style="color:var(--textDim);">Ожидание первой проверки...</span>';
+    }
+
+    // Статистика
+    $('statTotal').textContent = data.checks_total || 0;
+    $('statFailed').textContent = data.checks_failed || 0;
+    var failPct = data.checks_total ? ((data.checks_failed || 0) / data.checks_total * 100) : 0;
+    $('statBar').style.width = failPct + '%';
+
+    // Последняя проверка
+    if (data.checks && data.checks.length > 0) {
+      var last = data.checks[data.checks.length - 1];
+      var summary = last.summary || {};
+      $('lastCheck').innerHTML = [
+        { key: 'WS', ok: summary.ws },
+        { key: 'График', ok: summary.chart },
+        { key: 'Таблица', ok: summary.table },
+        { key: 'API', ok: summary.api },
+        { key: 'JS-ошибок', ok: !summary.js_errors, value: summary.js_errors },
+      ].map(function(item) {
+        var cls = item.ok ? 'pass' : 'fail';
+        var icon = item.ok ? '✓' : '✗';
+        var text = item.key;
+        if (item.value !== undefined && item.value > 0) text += ': ' + item.value;
+        return '<div class="check-item ' + cls + '"><span class="check-icon">' + icon + '</span>' + text + '</div>';
+      }).join('');
+    }
+
+    // Ошибки
+    var errors = data.errors || [];
+    $('errCount').textContent = errors.length;
+    if (errors.length === 0) {
+      $('errorList').innerHTML = '<li class="empty-state">Ошибок нет ✓</li>';
+    } else {
+      $('errorList').innerHTML = errors.slice().reverse().map(function(e) {
+        return '<li class="log-item">' +
+          '<span class="log-time">' + (e.time || '').slice(11, 19) + '</span>' +
+          '<span class="log-type error">ERROR</span>' +
+          '<span class="log-source ' + (e.source || 'bot') + '">' + (e.source || 'bot') + '</span>' +
+          '<span class="log-msg">' + escHtml(e.message || '') + '</span>' +
+          '</li>';
+      }).join('');
+    }
+
+    // Предупреждения
+    var warnings = data.warnings || [];
+    $('warnCount').textContent = warnings.length;
+    if (warnings.length === 0) {
+      $('warnList').innerHTML = '<li class="empty-state">Предупреждений нет ✓</li>';
+    } else {
+      $('warnList').innerHTML = warnings.slice().reverse().map(function(w) {
+        return '<li class="log-item">' +
+          '<span class="log-time">' + (w.time || '').slice(11, 19) + '</span>' +
+          '<span class="log-type warning">WARN</span>' +
+          '<span class="log-source ' + (w.source || 'bot') + '">' + (w.source || 'bot') + '</span>' +
+          '<span class="log-msg">' + escHtml(w.message || '') + '</span>' +
+          '</li>';
+      }).join('');
+    }
+
+    // История проверок
+    var checks = (data.checks || []).slice(-20).reverse();
+    $('checkHistory').innerHTML = checks.map(function(c, i) {
+      var cls = c.passed ? 'pass' : 'fail';
+      var icon = c.passed ? '✓' : '✗';
+      var time = (c.time || '').slice(11, 19);
+      var details = (c.details || []).slice(0, 4).join(' · ');
+      return '<div class="check-row ' + cls + '">' +
+        '<span class="check-time">' + time + '</span>' +
+        '<span style="color:' + (c.passed ? 'var(--green)' : 'var(--red)') + ';">' + icon + '</span>' +
+        '<span style="flex:1;">' + escHtml(details) + '</span>' +
+        '</div>';
+    }).join('');
+
+    renderCandleWatchdog(data);
+  }
+  function escHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function renderCandleWatchdog(data) {
+    var wd = data.candle_watchdog || {};
+    var el = document.getElementById('candleWatchdog');
+    if (!el) return;
+
+    if (!wd.started) {
+      el.innerHTML = '<span style="color:var(--textDim);">Ожидание запуска...</span>';
+      return;
+    }
+
+    var startTime = wd.started ? new Date(wd.started) : null;
+    var elapsed = startTime ? Math.round((Date.now() - startTime.getTime()) / 1000 / 60) : 0;
+    var snaps = (wd.snapshots || []).length;
+    var anomalies = (wd.anomalies || []).length;
+    var expected = 61; // 60 пред-перезагрузочных + 1 пост
+    var elapsed = Math.round(snaps * 30 / 60); // каждый снимок = 30 секунд
+    var progress = Math.min(100, Math.round(snaps / expected * 100));
+    var statusColor = anomalies > 0 ? 'var(--red)' : (snaps >= 61 ? 'var(--green)' : 'var(--gold)');
+    var statusText = anomalies > 0 ? 'НАЙДЕНЫ АНОМАЛИИ' : (snaps >= 61 ? 'ЗАВЕРШЕНО — АНОМАЛИЙ НЕТ' : 'ИДЁТ НАБЛЮДЕНИЕ');
+
+    var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
+      '<div style="display:flex;align-items:center;gap:5px;">' +
+      '<span class="status-dot" style="background:' + statusColor + ';"></span>' +
+      '<span style="font-weight:700;color:' + statusColor + ';">' + statusText + '</span>' +
+      '</div>' +
+      '</div>';
+
+    html += '<div style="margin-bottom:8px;">' +
+      '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--textDim);margin-bottom:3px;">' +
+      '<span>Прогресс: ' + snaps + '/' + expected + ' снимков (' + elapsed + ' мин)</span>' +
+      '<span>' + progress + '%</span>' +
+      '</div>' +
+      '<div class="bar-fill" style="height:6px;background:var(--border);border-radius:3px;">' +
+      '<div class="bar-fill-inner" style="width:' + progress + '%;height:100%;border-radius:3px;background:' + statusColor + ';transition:width 0.5s;"></div>' +
+      '</div>' +
+      '</div>';
+
+    html += '<div style="display:flex;gap:16px;font-size:10px;color:var(--textDim);margin-bottom:8px;">' +
+      '<span>Всего свечей: ' + (wd.snapshots && wd.snapshots[wd.snapshots.length-1] ? wd.snapshots[wd.snapshots.length-1].total : '—') + '</span>' +
+      '<span>Аномалий: <b style="color:' + (anomalies > 0 ? 'var(--red)' : 'var(--green)') + ';">' + anomalies + '</b></span>' +
+      '</div>';
+
+    if (anomalies > 0) {
+      html += '<div style="margin-top:8px;">';
+      wd.anomalies.forEach(function(a) {
+        html += '<div style="padding:4px 8px;background:rgba(234,57,67,0.08);border:1px solid rgba(234,57,67,0.2);border-radius:4px;margin-bottom:4px;font-size:10px;">' +
+          '<span style="color:var(--textDim);">' + (a.time || '').slice(11,19) + '</span> ' +
+          '<span style="color:var(--red);">' + escHtml(a.message) + '</span>' +
+          '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Последние 5 снимков (таблица координат)
+    if (wd.snapshots && wd.snapshots.length > 0) {
+      var recent = wd.snapshots.slice(-5);
+      html += '<div style="margin-top:10px;font-size:9px;color:var(--textDim);">Последние снимки:</div>';
+      html += '<table style="width:100%;border-collapse:collapse;font-size:9px;margin-top:4px;">';
+      html += '<tr style="color:var(--textDim);">' +
+        '<th style="text-align:left;padding:2px 4px;">Время</th>' +
+        '<th style="text-align:right;padding:2px 4px;">Свечей</th>' +
+        '<th style="text-align:right;padding:2px 4px;">Посл. X</th>' +
+        '<th style="text-align:right;padding:2px 4px;">Y тела</th>' +
+        '<th style="text-align:right;padding:2px 4px;">H тела</th>' +
+        '<th style="text-align:right;padding:2px 4px;">Цвет</th>' +
+        '</tr>';
+      recent.forEach(function(r) {
+        var last = r.sample && r.sample[r.sample.length-1];
+        html += '<tr style="border-top:1px solid rgba(28,33,40,0.3);">' +
+          '<td style="padding:2px 4px;color:var(--textDim);">' + (r.time || '').slice(11,19) + '</td>' +
+          '<td style="text-align:right;padding:2px 4px;">' + (r.total || '—') + '</td>' +
+          '<td style="text-align:right;padding:2px 4px;">' + (last ? last.x : '—') + '</td>' +
+          '<td style="text-align:right;padding:2px 4px;">' + (last ? last.y : '—') + '</td>' +
+          '<td style="text-align:right;padding:2px 4px;">' + (last ? last.h : '—') + '</td>' +
+          '<td style="text-align:right;padding:2px 4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + (last ? last.fill : '#333') + ';"></span></td>' +
+          '</tr>';
+      });
+      html += '</table>';
+    }
+
+    el.innerHTML = html;
+  }
+
+  loadResults();
+  setInterval(loadResults, 5000);
+})();
+</script>
+</body>
+</html>

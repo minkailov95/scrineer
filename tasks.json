@@ -1,0 +1,80 @@
+[
+  {
+    "id": 1,
+    "status": "completed",
+    "title": "Починить WebSocket-путь к Binance Futures",
+    "description": "Добавить /market/ в URL: wss://fstream.binance.com/market/ws/ и /market/stream?streams=",
+    "date": "2025-05-31"
+  },
+  {
+    "id": 2,
+    "status": "completed",
+    "title": "RAM-буферы для цен и NATR",
+    "description": "Сервер хранит PRICE_BUFFER (30 мин) и NATR_BUFFER в оперативной памяти. Фронтенд получает всё через /api/tickers",
+    "date": "2025-05-31"
+  },
+  {
+    "id": 3,
+    "status": "completed",
+    "title": "Сортировка списка монет по CH24h, график 5м по умолчанию",
+    "description": "По умолчанию список сортируется по изменению за 24ч, первая монета открывается на 5-минутном графике",
+    "date": "2025-05-31"
+  },
+  {
+    "id": 4,
+    "status": "pending",
+    "title": "Собственный прокси-сервер для WebSocket Binance",
+    "description": "Конкуренты (wintrading.live) используют прокси на DigitalOcean: Binance WS → их сервер → браузер пользователя. Это защищает от банов, решает CORS и сетевые проблемы. Нам нужно реализовать такую же архитектуру.",
+    "date": "2025-05-31",
+    "priority": "high",
+    "reference": "wss://wintrading-proxy-server-oc2nu.ondigitalocean.app/klines"
+  },
+  {
+    "id": 5,
+    "status": "pending",
+    "title": "Колонка OI5m (Открытый интерес)",
+    "description": "Реализовать отображение изменения открытого интереса за 5 минут в правой панели",
+    "date": "2025-05-31",
+    "priority": "low"
+  },
+  {
+    "id": 6,
+    "status": "pending",
+    "title": "Инструменты рисования: прямоугольник, кисть, текст",
+    "description": "Добавить оставшиеся инструменты рисования на график (сейчас работают только горизонтальная линия и луч)",
+    "date": "2025-05-31",
+    "priority": "medium"
+  },
+  {
+    "id": 7,
+    "status": "pending",
+    "title": "Heikin Ashi и другие типы графиков",
+    "description": "Добавить Heikin Ashi, полые свечи, линейный и ступенчатый графики",
+    "date": "2025-05-31",
+    "priority": "medium"
+  },
+  {
+    "id": 8,
+    "status": "pending",
+    "title": "Логарифмическая и процентная шкала",
+    "description": "Переключение между линейной, логарифмической и процентной шкалой цены",
+    "date": "2025-05-31",
+    "priority": "low"
+  },
+  {
+    "id": 9,
+    "status": "pending",
+    "title": "Фибоначчи и трендовые линии",
+    "description": "Добавить инструменты Фибоначчи (retracement, extension) и трендовые линии с автопродлением",
+    "date": "2025-05-31",
+    "priority": "high"
+  },
+  {
+    "id": 10,
+    "status": "pending",
+    "title": "Интеграция с Telegram (оповещения)",
+    "description": "Отправка уведомлений в Telegram при достижении ценовых уровней или изменении NATR",
+    "date": "2025-05-31",
+    "priority": "medium"
+  }
+]
