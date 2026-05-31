@@ -155,31 +155,51 @@
     }
     .ray-settings {
       position: absolute; z-index: 100;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 6px; padding: 8px; display: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      background: #1E1E1E; border: 1px solid #06B6D4;
+      border-radius: 12px; padding: 6px 10px;
+      box-shadow: 0 4px 20px rgba(6,182,212,0.12);
       font-size: 11px; pointer-events: auto;
+      display: none; align-items: center; gap: 6px;
+      min-width: 320px;
     }
-    .ray-settings label { display: block; margin-bottom: 4px; color: var(--textDim); }
-    .ray-settings input {
-      background: var(--bg); border: 1px solid var(--border);
-      color: var(--text); padding: 2px 4px; border-radius: 3px;
-      font-family: 'JetBrains Mono'; margin-bottom: 8px;
+    .ray-settings .sep { width: 1px; height: 22px; background: #333; flex-shrink: 0; }
+    .ray-settings .ray-handle {
+      cursor: grab; font-size: 10px; font-weight: 600; color: #06B6D4;
+      text-transform: uppercase; letter-spacing: 0.5px; user-select: none;
+      padding: 2px 6px; white-space: nowrap;
     }
-    .ray-settings .row { display: flex; gap: 5px; align-items: center; }
-    .ray-settings button {
-      padding: 3px 8px; background: var(--surface); color: var(--text);
-      border: 1px solid var(--border); border-radius: 3px; cursor: pointer;
+    .ray-settings .ray-handle:active { cursor: grabbing; }
+    .ray-settings .ray-swatches { display: flex; gap: 3px; align-items: center; }
+    .ray-settings .ray-swatch {
+      width: 16px; height: 16px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; transition: 0.1s; flex-shrink: 0;
     }
-    .ray-settings button:hover { border-color: var(--gold); }
-    .ray-handle {
-      cursor: grab; padding: 4px 8px; margin: -8px -8px 6px -8px;
-      background: var(--border); border-radius: 6px 6px 0 0;
-      font-size: 10px; font-weight: 600; color: var(--textDim);
-      text-transform: uppercase; letter-spacing: 0.5px;
-      user-select: none;
+    .ray-settings .ray-swatch:hover { border-color: #888; }
+    .ray-settings .ray-swatch.active { border-color: #06B6D4; }
+    .ray-settings input[type="number"] {
+      width: 32px; background: rgba(0,0,0,0.3); color: #E2E8F0;
+      border: 1px solid rgba(255,255,255,0.06); border-radius: 4px;
+      padding: 2px 4px; font-size: 11px; font-family: 'JetBrains Mono', monospace;
     }
-    .ray-handle:active { cursor: grabbing; }
+    .ray-settings select {
+      background: rgba(0,0,0,0.3); color: #06B6D4; border: 1px solid #06B6D444;
+      border-radius: 4px; padding: 2px 4px; font-size: 10px; cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .ray-settings input[type="text"] {
+      background: rgba(0,0,0,0.3); color: #E2E8F0;
+      border: 1px solid rgba(255,255,255,0.06); border-radius: 4px;
+      padding: 2px 6px; font-size: 11px; min-width: 70px;
+    }
+    .ray-settings button.del {
+      background: transparent; border: none; color: #FC8181;
+      cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 4px;
+    }
+    .ray-settings button.del:hover { background: rgba(255,255,255,0.05); }
+    .ray-settings .color-pick {
+      width: 20px; height: 20px; border-radius: 50%; padding: 0; border: 2px solid #555;
+      cursor: pointer; flex-shrink: 0;
+    }
     .price-tag.up { background: var(--green); color: #080B10; }
     .price-tag.down { background: var(--red); color: #FFFFFF; }
 
@@ -291,7 +311,7 @@
   <button class="tf-btn">1ч</button>
   <button class="tf-btn">2ч</button>
   <button class="tf-btn">4ч</button>
-  <button class="tf-btn" style="background:var(--border);color:var(--text);">1д</button>
+  <button class="tf-btn">1д</button>
   <button class="tf-btn">1н</button>
   <button class="tf-btn">1М</button>
   <span class="sep"></span>
@@ -337,42 +357,33 @@
       <div class="info-block"><span class="inf-label">Спред:</span><span class="inf-val" id="infoSpread">—</span></div>
     </div>
     <div class="ray-settings" id="raySettings">
-      <div class="ray-handle" id="rayHandle">⊙ Луч</div>
-      <div class="row">
-        <label>Цвет</label>
-        <input type="color" id="rayColor" value="#F0B90B">
-      </div>
-      <div class="row">
-        <label>Толщина</label>
-        <input type="number" id="rayWidth" value="1" min="1" max="10" style="width: 40px;">
-      </div>
-      <div class="row">
-        <label>Текст</label>
-        <input type="text" id="rayText" placeholder="Метка..." style="width: 80px;">
-      </div>
-      <div class="row">
-        <button id="rayApply">ОК</button>
-        <button id="rayDel" style="color: var(--red);">Удалить</button>
-      </div>
+      <span class="ray-handle" id="rayHandle">⊙</span>
+      <div class="sep"></div>
+      <div class="ray-swatches" id="raySwatches" style="display:flex;gap:3px;"></div>
+      <div class="sep"></div>
+      <input type="color" id="rayColor" value="#06B6D4" class="color-pick">
+      <div class="sep"></div>
+      <input type="number" id="rayWidth" value="1" min="1" max="10">
+      <div class="sep"></div>
+      <select id="rayStyle">
+        <option value="solid">—</option>
+        <option value="dashed">--</option>
+      </select>
+      <div class="sep"></div>
+      <input type="text" id="rayText" placeholder="Текст" style="min-width:60px;">
+      <button class="del" id="rayDel">🗑</button>
     </div>
     <div class="ray-settings" id="textSettings">
-      <div class="ray-handle" id="txtHandle">⊙ Текст</div>
-      <div class="row">
-        <label>Текст</label>
-        <input type="text" id="txtText" placeholder="Метка..." style="width: 100px;">
-      </div>
-      <div class="row">
-        <label>Цвет</label>
-        <input type="color" id="txtColor" value="#F0B90B">
-      </div>
-      <div class="row">
-        <label>Размер</label>
-        <input type="number" id="txtSize" value="12" min="8" max="48" style="width: 40px;">
-      </div>
-      <div class="row">
-        <button id="txtApply">ОК</button>
-        <button id="txtDel" style="color: var(--red);">Удалить</button>
-      </div>
+      <span class="ray-handle" id="txtHandle">T</span>
+      <div class="sep"></div>
+      <div class="ray-swatches" id="txtSwatches" style="display:flex;gap:3px;"></div>
+      <div class="sep"></div>
+      <input type="color" id="txtColor" value="#06B6D4" class="color-pick">
+      <div class="sep"></div>
+      <input type="number" id="txtSize" value="12" min="8" max="48" style="width:36px;">
+      <div class="sep"></div>
+      <input type="text" id="txtText" placeholder="Текст" style="min-width:60px;">
+      <button class="del" id="txtDel">🗑</button>
     </div>
   </div>
 
@@ -452,7 +463,7 @@
   // ============================================================
   // D3 CHART STATE
   // ============================================================
-  var svg, chartG, gridG, volumeG, candleG, smaG, bbG, rsiG, rayG, hLineG, rectG, textG, fractalG, xAxisG, yAxisG, labelG, rulerG, currentPriceLineG, xAxisTimeLabel;
+  var svg, chartG, gridG, volumeG, candleG, smaG, bbG, rsiG, rayG, hLineG, rectG, textG, fractalG, xAxisG, yAxisG, labelG, rulerG, currentPriceLineG;
   var crossV, crossH, crossLabel;
   var xScale, xScaleOrig, yScale, yRsiScale, volumeScale;
   var chartReady = false;
@@ -1016,7 +1027,14 @@
     });
 
     xAxisG.attr('transform', 'translate(' + margin.left + ',' + (margin.top + chartHeight) + ')');
-    var xAxis = d3.axisBottom(xScale).ticks(Math.min(10, Math.floor(chartWidth / 80)));
+    var xAxis = d3.axisBottom(xScale)
+      .ticks(Math.min(10, Math.floor(chartWidth / 80)))
+      .tickFormat(function(d) {
+        var date = new Date(d * 1000);
+        var h = String(date.getHours()).padStart(2, '0');
+        var m = String(date.getMinutes()).padStart(2, '0');
+        return h + ':' + m;
+      });
     xAxisG.call(xAxis);
     xAxisG.selectAll('text')
       .attr('fill', C.text)
@@ -1102,6 +1120,23 @@
         .attr('y1', y).attr('y2', y)
         .attr('stroke', f.isHigh ? 'rgba(234,57,67,0.5)' : 'rgba(22,199,132,0.5)')
         .attr('stroke-width', 1);
+      yAxisG.append('text')
+        .attr('x', 4)
+        .attr('y', yScale(f.value) + 3)
+        .attr('fill', f.isHigh ? 'rgba(234,57,67,0.6)' : 'rgba(22,199,132,0.6)')
+        .attr('font-family', 'JetBrains Mono, monospace')
+        .attr('font-size', '9px')
+        .text(fmtNum(f.value, 6));
+      // Background rect
+      yAxisG.append('rect')
+        .attr('x', 0)
+        .attr('y', yScale(f.value) - 6)
+        .attr('width', 6 * fmtNum(f.value, 6).length + 10)
+        .attr('height', 14)
+        .attr('rx', 3)
+        .attr('fill', f.isHigh ? 'rgba(234,57,67,0.08)' : 'rgba(22,199,132,0.08)')
+        .attr('stroke', f.isHigh ? 'rgba(234,57,67,0.15)' : 'rgba(22,199,132,0.15)')
+        .attr('stroke-width', 0.5);
     });
   }
 
@@ -1113,25 +1148,60 @@
       var x1 = margin.left + xScale(r.time);
       var x2 = margin.left + chartWidth;
       var y = margin.top + yScale(r.price);
+      var dash = r.style === 'dashed' ? '6,4' : null;
       
-      var line = rayG.append('line')
+      var g = rayG.append('g');
+      
+      g.append('line')
+        .attr('x1', x1).attr('x2', x2)
+        .attr('y1', y).attr('y2', y)
+        .attr('stroke', 'transparent')
+        .attr('stroke-width', 10)
+        .attr('cursor', 'pointer')
+        .on('mouseenter', function() {
+          g.selectAll('line:last-child').attr('opacity', 1).attr('stroke-width', (r.width || 1) + 1);
+        })
+        .on('mouseleave', function() {
+          g.selectAll('line:last-child').attr('opacity', 0.7).attr('stroke-width', r.width || 1);
+        })
+        .on('mousedown', function(e) {
+          if (drawMode !== 'cursor') return;
+          e.preventDefault();
+          e.stopPropagation();
+          showRaySettings(i);
+          dragData = { type: 'ray', idx: i };
+          svg.style('cursor', 'grabbing');
+        });
+      
+      g.append('line')
+        .attr('class', 'ray-visible')
         .attr('x1', x1).attr('x2', x2)
         .attr('y1', y).attr('y2', y)
         .attr('stroke', r.color || C.orange)
         .attr('stroke-width', r.width || 1)
-        .attr('cursor', 'pointer')
-        .on('click', function(e) {
-          e.stopPropagation();
-          showRaySettings(i);
-        });
+        .attr('stroke-dasharray', dash)
+        .attr('pointer-events', 'none')
+        .attr('opacity', 0.7);
 
       if (r.text) {
+        var labelTxt = r.text;
+        var tw = labelTxt.length * 6 + 12;
+        // Background rect
+        rayG.append('rect')
+          .attr('x', x1 + 2).attr('y', y - 12)
+          .attr('width', tw).attr('height', 16)
+          .attr('rx', 3)
+          .attr('fill', 'rgba(8,11,16,0.75)')
+          .attr('stroke', r.color || C.orange)
+          .attr('stroke-width', 0.5)
+          .attr('opacity', 0.8);
         rayG.append('text')
-          .attr('x', x1 + 4).attr('y', y - 4)
+          .attr('x', x1 + 4).attr('y', y - 2)
           .attr('fill', r.color || C.orange)
           .attr('font-family', 'JetBrains Mono, monospace')
           .attr('font-size', '10px')
-          .text(r.text);
+          .attr('opacity', 0.85)
+          .text(labelTxt);
       }
     });
   }
@@ -1139,7 +1209,7 @@
   function renderRects() {
     rectG.selectAll('*').remove();
     if (rects.length === 0) return;
-    rects.forEach(function(r) {
+    rects.forEach(function(r, i) {
       var x1 = margin.left + xScale(r.time1);
       var x2 = margin.left + xScale(r.time2);
       var y1 = margin.top + yScale(r.price1);
@@ -1151,7 +1221,17 @@
         .attr('height', Math.abs(y2 - y1))
         .attr('fill', 'rgba(240,185,11,0.1)')
         .attr('stroke', C.gold)
-        .attr('stroke-width', 1);
+        .attr('stroke-width', 1)
+        .attr('cursor', 'pointer')
+        .attr('opacity', 0.7)
+        .on('mouseenter', function() { d3.select(this).attr('opacity', 1); })
+        .on('mouseleave', function() { d3.select(this).attr('opacity', 0.7); })
+        .on('mousedown', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dragData = { type: 'rect', idx: i };
+          svg.style('cursor', 'grabbing');
+        });
     });
   }
 
@@ -1169,10 +1249,16 @@
         .attr('font-size', (t.fontSize || 12) + 'px')
         .attr('text-anchor', 'middle')
         .attr('cursor', 'pointer')
+        .attr('opacity', 0.8)
         .text(t.text)
-        .on('click', function(e) {
+        .on('mouseenter', function() { d3.select(this).attr('opacity', 1); })
+        .on('mouseleave', function() { d3.select(this).attr('opacity', 0.8); })
+        .on('mousedown', function(e) {
+          e.preventDefault();
           e.stopPropagation();
           showTextSettings(i);
+          dragData = { type: 'text', idx: i };
+          svg.style('cursor', 'grabbing');
         });
     });
   }
@@ -1182,14 +1268,32 @@
     labelG.selectAll('*').remove();
     if (priceLineData.length === 0) return;
 
-    priceLineData.forEach(function(pl) {
+    priceLineData.forEach(function(pl, i) {
       var y = margin.top + yScale(pl.price);
-      hLineG.append('line')
+      var line = hLineG.append('line')
         .attr('x1', margin.left).attr('x2', margin.left + chartWidth)
         .attr('y1', y).attr('y2', y)
         .attr('stroke', pl.color || C.purple)
         .attr('stroke-width', 1)
-        .attr('stroke-dasharray', '4,4');
+        .attr('stroke-dasharray', '4,4')
+        .attr('cursor', 'pointer')
+        .attr('opacity', 0.7)
+        .on('mouseenter', function() { d3.select(this).attr('opacity', 1).attr('stroke-width', 2); })
+        .on('mouseleave', function() { d3.select(this).attr('opacity', 0.7).attr('stroke-width', 1); })
+        .on('mousedown', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dragData = { type: 'hline', idx: i };
+          svg.style('cursor', 'grabbing');
+        });
+      labelG.append('text')
+        .attr('x', margin.left + chartWidth + 4)
+        .attr('y', y + 4)
+        .attr('fill', pl.color || C.purple)
+        .attr('font-family', 'JetBrains Mono, monospace')
+        .attr('font-size', '10px')
+        .attr('opacity', 0.8)
+        .text(pl.title || '');
       labelG.append('text')
         .attr('x', margin.left + chartWidth + 4)
         .attr('y', y + 4)
@@ -1276,7 +1380,28 @@
     });
   }
 
+  var PALETTE = ['#F0B90B', '#22AB94', '#F23645', '#7C3AED', '#CFCFCF'];
+
+  function initSwatches(containerId, inputId) {
+    var container = $(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    PALETTE.forEach(function(c) {
+      var sw = document.createElement('span');
+      sw.className = 'ray-swatch';
+      sw.style.background = c;
+      sw.dataset.color = c;
+      sw.addEventListener('click', function() {
+        $(inputId).value = c;
+        container.querySelectorAll('.ray-swatch').forEach(function(s) { s.classList.remove('active'); });
+        this.classList.add('active');
+      });
+      container.appendChild(sw);
+    });
+  }
+
   var selectedRayIdx = -1;
+  var dragData = null; // { type: 'ray'|'text'|'rect'|'hline', idx: number }
   function showRaySettings(idx) {
     selectedRayIdx = idx;
     var r = rayData[idx];
@@ -1284,22 +1409,42 @@
     $('rayColor').value = r.color;
     $('rayWidth').value = r.width;
     $('rayText').value = r.text || '';
+    $('rayStyle').value = r.style || 'solid';
     
-    // Use global event as d3 event
-    var e = window.event; 
+    // Highlight active swatch
+    var swatches = panel.querySelectorAll('.ray-swatch');
+    swatches.forEach(function(s) { s.classList.toggle('active', s.dataset.color === r.color); });
+    
+    var e = window.event;
     panel.style.display = 'block';
     panel.style.left = (e.clientX + 10) + 'px';
     panel.style.top = (e.clientY + 10) + 'px';
   }
 
-  $('rayApply').addEventListener('click', function() {
+  initSwatches('raySwatches', 'rayColor');
+
+  function applyRaySettings() {
     if (selectedRayIdx === -1) return;
     var r = rayData[selectedRayIdx];
     r.color = $('rayColor').value;
     r.width = parseInt($('rayWidth').value) || 1;
     r.text = $('rayText').value;
+    r.style = $('rayStyle').value;
     $('raySettings').style.display = 'none';
     renderAll();
+  }
+
+  $('rayColor').addEventListener('input', function() {
+    if (selectedRayIdx !== -1) applyRaySettings();
+  });
+  $('rayWidth').addEventListener('input', function() {
+    if (selectedRayIdx !== -1) applyRaySettings();
+  });
+  $('rayStyle').addEventListener('change', function() {
+    if (selectedRayIdx !== -1) applyRaySettings();
+  });
+  $('rayText').addEventListener('input', function() {
+    if (selectedRayIdx !== -1) applyRaySettings();
   });
 
   $('rayDel').addEventListener('click', function() {
@@ -1310,7 +1455,7 @@
     renderAll();
   });
 
-  document.addEventListener('mousedown', function(e) {
+  document.addEventListener('contextmenu', function(e) {
     if (!e.target.closest('#raySettings') && !e.target.closest('#textSettings') && !e.target.__d3_event_source) {
       $('raySettings').style.display = 'none';
       $('textSettings').style.display = 'none';
@@ -1348,13 +1493,18 @@
     $('txtColor').value = t.color || C.gold;
     $('txtSize').value = t.fontSize || 12;
     
+    var swatches = panel.querySelectorAll('.ray-swatch');
+    swatches.forEach(function(s) { s.classList.toggle('active', s.dataset.color === t.color); });
+    
     var e = window.event;
     panel.style.display = 'block';
     panel.style.left = (e.clientX + 10) + 'px';
     panel.style.top = (e.clientY + 10) + 'px';
   }
 
-  $('txtApply').addEventListener('click', function() {
+  initSwatches('txtSwatches', 'txtColor');
+
+  function applyTextSettings() {
     if (selectedTextIdx === -1) return;
     var t = texts[selectedTextIdx];
     t.text = $('txtText').value;
@@ -1362,6 +1512,16 @@
     t.fontSize = parseInt($('txtSize').value) || 12;
     $('textSettings').style.display = 'none';
     renderAll();
+  }
+
+  $('txtColor').addEventListener('input', function() {
+    if (selectedTextIdx !== -1) applyTextSettings();
+  });
+  $('txtSize').addEventListener('input', function() {
+    if (selectedTextIdx !== -1) applyTextSettings();
+  });
+  $('txtText').addEventListener('input', function() {
+    if (selectedTextIdx !== -1) applyTextSettings();
   });
 
   $('txtDel').addEventListener('click', function() {
@@ -1382,7 +1542,14 @@
     container.innerHTML = '';
     var r = container.getBoundingClientRect();
     if (r.width === 0) {
-      setTimeout(initChart, 100);
+      // Wait for container to get layout
+      var waitId = setInterval(function() {
+        var r2 = container.getBoundingClientRect();
+        if (r2.width > 0) {
+          clearInterval(waitId);
+          initChart();
+        }
+      }, 50);
       return;
     }
 
@@ -1423,18 +1590,6 @@
 
     labelG = svg.append('g').attr('class', 'labels');
     xAxisG = svg.append('g').attr('class', 'x-axis');
-    xAxisTimeLabel = xAxisG.append('g').attr('class', 'x-time-label')
-      .attr('transform', 'translate(0, -8)');
-    xAxisTimeLabel.append('rect')
-      .attr('fill', 'rgba(8,11,16,0.85)').attr('rx', 3)
-      .attr('height', 16);
-    xAxisTimeLabel.append('text')
-      .attr('fill', C.gold)
-      .attr('font-family', 'JetBrains Mono, monospace')
-      .attr('font-size', '10px')
-      .attr('text-anchor', 'middle')
-      .attr('dy', '1em')
-      .attr('x', 0);
     yAxisG = svg.append('g').attr('class', 'y-axis');
 
     yAxisG.on('wheel', function(event) {
@@ -1459,7 +1614,7 @@
       .attr('font-size', '11px').attr('font-weight', '700')
       .attr('text-anchor', 'end');
 
-    xScaleOrig = d3.scaleTime().range([0, chartWidth]);
+    xScaleOrig = d3.scaleLinear().range([0, chartWidth]);
     yScale = d3.scaleLinear();
     yRsiScale = d3.scaleLinear().domain([0, 100]);
     volumeScale = d3.scaleLinear();
@@ -1467,18 +1622,63 @@
 
     var zoom = d3.zoom()
       .scaleExtent([1, 20])
-      .on('zoom', function(event) {
-        xScale = event.transform.rescaleX(xScaleOrig);
-        renderAll();
-      });
+       .on('zoom', function(event) {
+         xScale = event.transform.rescaleX(xScaleOrig);
+         renderAll();
+       });
 
-    svg.call(zoom);
+     svg.call(zoom);
 
-    svg.on('mousemove', function(event) {
-      var coords = d3.pointer(event);
-      var mx = coords[0] - margin.left;
-      var my = coords[1] - margin.top;
-      if (mx < 0 || mx > chartWidth || my < 0 || my > chartHeight) {
+     svg.on('mousemove', function(event) {
+       var coords = d3.pointer(event);
+       var mx = coords[0] - margin.left;
+       var my = coords[1] - margin.top;
+
+       // Drag logic first — works even outside chart bounds
+       if (dragData) {
+         var dragTime = xScale.invert(mx);
+         var dragPrice = yScale.invert(my);
+         if (magnetActive && klineData.length > 0) {
+           var bisect = d3.bisector(function(d) { return d.time; }).left;
+           var idx = bisect(klineData, dragTime);
+           var d = (idx >= 0 && idx < klineData.length) ? klineData[idx] : null;
+           if (d) {
+             var dragOhlc = [d.open, d.high, d.low, d.close];
+             var dragBest = dragOhlc[0], dragBestDist = Math.abs(dragOhlc[0] - dragPrice);
+             for (var di = 1; di < dragOhlc.length; di++) {
+               var dd = Math.abs(dragOhlc[di] - dragPrice);
+               if (dd < dragBestDist) { dragBestDist = dd; dragBest = dragOhlc[di]; }
+             }
+             dragPrice = dragBest;
+           }
+         }
+         if (dragData.type === 'ray') {
+           rayData[dragData.idx].time = dragTime;
+           rayData[dragData.idx].price = dragPrice;
+           scheduleRender();
+         } else if (dragData.type === 'text') {
+           texts[dragData.idx].time = dragTime;
+           texts[dragData.idx].price = dragPrice;
+           scheduleRender();
+         } else if (dragData.type === 'hline') {
+           priceLineData[dragData.idx].price = dragPrice;
+           priceLineData[dragData.idx].title = fmtNum(dragPrice, 6);
+           scheduleRender();
+         } else if (dragData.type === 'rect') {
+           var rx = (xScale(rects[dragData.idx].time1) + xScale(rects[dragData.idx].time2)) / 2;
+           var ry = (yScale(rects[dragData.idx].price1) + yScale(rects[dragData.idx].price2)) / 2;
+           var dx = xScale(dragTime) - rx;
+           var dy = yScale(dragPrice) - ry;
+           rects[dragData.idx].time1 = xScale.invert(xScale(rects[dragData.idx].time1) + dx);
+           rects[dragData.idx].time2 = xScale.invert(xScale(rects[dragData.idx].time2) + dx);
+           rects[dragData.idx].price1 = yScale.invert(yScale(rects[dragData.idx].price1) + dy);
+           rects[dragData.idx].price2 = yScale.invert(yScale(rects[dragData.idx].price2) + dy);
+           scheduleRender();
+         }
+         return;
+       }
+
+       if (mx < 0 || mx > chartWidth || my < 0 || my > chartHeight) {
         svg.select('.crosshair').style('display', 'none');
         $('crosshairInfo').style.display = 'none';
         return;
@@ -1524,16 +1724,7 @@
       var date = new Date(time * 1000);
       crossInfoEl.textContent = date.getDate() + '/' + (date.getMonth() + 1) + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0') + ' | ' + (magnetActive ? '>> ' : '') + fmtNum(price, 6);
 
-      if (xAxisTimeLabel) {
-        var dateStr = date.getDate() + '/' + (date.getMonth() + 1) + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
-        xAxisTimeLabel.attr('transform', 'translate(' + (cx - margin.left) + ', -8)');
-        xAxisTimeLabel.select('text').text(dateStr);
-        var tw = dateStr.length * 6.5 + 10;
-        xAxisTimeLabel.select('rect')
-          .attr('x', -tw / 2).attr('width', tw);
-      }
-
-       // Ruler preview
+        // Ruler preview
         if (drawMode === 'ruler' && pendingRuler) {
           rulerG.selectAll('.ruler-preview').remove();
           var x1 = pendingRuler.x1, y1 = pendingRuler.y1;
@@ -1591,7 +1782,16 @@
       rulerG.selectAll('.ruler-preview').remove();
     });
 
+    svg.on('contextmenu', function(event) { event.preventDefault(); })
+        .on('mouseup', function() {
+      if (dragData) {
+        dragData = null;
+        svg.style('cursor', 'default');
+      }
+    });
+
     svg.on('click', function(event) {
+      if (dragData) return;
       if (drawMode === 'cursor') return;
       var coords = d3.pointer(event);
       var mx = coords[0] - margin.left;
@@ -1638,30 +1838,19 @@
     if (showFractals) { try { drawFractals(); } catch(e) {} }
   }
 
-  // Таймфреймы
-  document.querySelectorAll('.tf-btn').forEach(function(btn) {
-    btn.addEventListener('click', async function() {
-      var tf = this.textContent.trim();
-      var tfMap = { '1м': '1m', '5м': '5m', '15м': '15m', '30м': '30m', '1ч': '1h', '2ч': '2h', '4ч': '4h', '1д': '1d', '1н': '1w', '1М': '1M' };
-      var interval = tfMap[tf];
-      if (!interval || interval === activeInterval) return;
-
-      document.querySelectorAll('.tf-btn').forEach(function(b) { b.classList.remove('active'); });
-      this.classList.add('active');
-
-      activeInterval = interval;
-      clearPriceLines(); clearRaySeries(); clearFractals();
-      await loadChartData();
-      connectKlineWS();
-      updateInfoBlocks();
-    });
-  });
-
-  // ============================================================
-  // TIME FRAME BUTTONS
   // ============================================================
   // DRAWING TOOLS
   // ============================================================
+
+  function updateIndicators() {
+    if (!chartReady) return;
+    renderAll();
+  }
+
+  function indicatorsApplyVisibility() {
+    if (!chartReady) return;
+    updateIndicators();
+  }
 
   function clearPriceLines() {
     priceLineData = [];
@@ -1674,7 +1863,7 @@
   }
 
   function addRayRight(time, price, color) {
-    rayData.push({ time: time, price: price, color: color || C.orange, width: 1, text: '' });
+    rayData.push({ time: time, price: price, color: color || C.orange, width: 1, text: '', style: 'solid' });
     renderAll();
   }
 
@@ -1816,6 +2005,11 @@
     drawMode = mode;
     pendingRuler = null;
     pendingRect = null;
+    if (mode === 'ray') {
+      magnetActive = true;
+      $('drawMagnet').classList.add('active');
+      $('drawMagnet').style.color = C.gold;
+    }
     document.querySelectorAll('.draw-btn').forEach(function(b) { b.classList.remove('active'); });
     var btnId = 'draw' + mode.charAt(0).toUpperCase() + mode.slice(1);
     var btnEl = $(btnId);
@@ -1973,6 +2167,7 @@
       clearPriceLines(); clearRaySeries(); clearFractals();
       await loadChartData();
       connectKlineWS();
+      updateInfoBlocks();
     });
   });
 
@@ -1992,8 +2187,13 @@
   async function loadChartData() {
     try {
       $('statusText').textContent = 'Загрузка ' + activeCoin + ' ' + activeInterval + '...';
-      klineData = await fetchKlines(activeCoin, activeInterval, 200);
-      coinPrices[activeCoin] = klineData.length > 0 ? klineData[klineData.length - 1].close : null;
+      var data = await fetchKlines(activeCoin, activeInterval, 200);
+      if (!data || data.length === 0) {
+        $('statusText').textContent = 'Нет данных для ' + activeCoin;
+        return;
+      }
+      klineData = data;
+      coinPrices[activeCoin] = klineData[klineData.length - 1].close;
       $('symDisplay').textContent = activeCoin;
       $('navSym').textContent = activeCoin;
       $('statusText').textContent = 'Binance · ' + activeCoin + ' · ' + klineData.length + ' св.';
@@ -2010,6 +2210,7 @@
       updateInfoBlocks();
     } catch(e) {
       $('statusText').textContent = 'Ошибка: ' + e.message;
+      console.error('loadChartData error:', e);
     }
   }
 

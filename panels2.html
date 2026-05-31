@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scrineer — Дизайн панелей #2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080B10; --surface: #0E1319; --surface2: #12161E;
+  --border: #1C2128; --text: #C8D0D8; --textDim: #5C6570; --gold: #F0B90B;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+  padding: 40px;
+}
+h1 { font-size: 18px; color: var(--gold); margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 30px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.num { font-size: 10px; color: var(--textDim); font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; }
+.name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.desc { font-size: 10px; color: var(--textDim); margin-bottom: 14px; }
+
+.panel { width: 200px; margin: 0 auto; }
+.handle {
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  text-align: center; user-select: none;
+}
+.row { display: flex; gap: 4px; align-items: center; margin-top: 6px; }
+.row label { font-size: 10px; color: var(--textDim); white-space: nowrap; }
+.c { width: 24px; height: 16px; border-radius: 2px; }
+.n { width: 32px; text-align: center; font-family: 'JetBrains Mono'; font-size: 10px; }
+.s { font-size: 10px; font-family: 'JetBrains Mono'; }
+.t { flex:1; font-size: 10px; font-family: 'Inter'; }
+.d { width: 20px; height: 20px; border: none; border-radius: 3px; font-size: 10px; cursor: pointer; }
+
+/* ───── Theme 1: Deep Ocean ───── */
+.t1 { background: #0C1222; border: 1px solid #1A2D4A; border-radius: 6px; padding: 0; }
+.t1 .handle { background: #1A2D4A; color: #60A5FA; padding: 4px 0; margin-bottom: 0; }
+.t1 .row { padding: 0 8px 6px 8px; }
+.t1 .c { background: #60A5FA; }
+.t1 .n, .t1 .s, .t1 .t { background: #0A1020; color: #93C5FD; border: 1px solid #1A2D4A; border-radius: 3px; padding: 2px 4px; }
+.t1 .d { background: #0A1020; color: #EF4444; border: 1px solid #1A2D4A; }
+
+/* ───── Theme 2: Amber ───── */
+.t2 { background: #14110B; border: 1px solid #78350F; border-radius: 8px; padding: 0; }
+.t2 .handle { background: linear-gradient(90deg, #78350F, #92400E); color: #FBBF24; padding: 5px 0; margin-bottom: 0; font-weight: 700; }
+.t2 .row { padding: 0 8px 6px 8px; }
+.t2 .c { background: #F59E0B; }
+.t2 .n, .t2 .s, .t2 .t { background: #0C0A08; color: #FDE68A; border: 1px solid #78350F; border-radius: 4px; padding: 2px 4px; }
+.t2 .d { background: #0C0A08; color: #EF4444; border: 1px solid #78350F; }
+
+/* ───── Theme 3: Midnight Compact ───── */
+.t3 { background: #09090B; border: 1px solid #27272A; border-radius: 4px; padding: 0; }
+.t3 .handle { background: #18181B; color: #A1A1AA; padding: 3px 0; margin-bottom: 0; font-size: 9px; letter-spacing: 1px; }
+.t3 .row { padding: 0 6px 4px 6px; gap: 3px; }
+.t3 .c { width: 18px; height: 14px; background: #F0B90B; }
+.t3 .n { width: 28px; font-size: 9px; background: #18181B; color: #A1A1AA; border: 1px solid #27272A; border-radius: 2px; padding: 1px 2px; }
+.t3 .s { font-size: 9px; background: #18181B; color: #A1A1AA; border: 1px solid #27272A; border-radius: 2px; padding: 1px 2px; }
+.t3 .t { font-size: 9px; background: #18181B; color: #A1A1AA; border: 1px solid #27272A; border-radius: 2px; padding: 1px 4px; }
+.t3 .d { width: 18px; height: 18px; background: #18181B; color: #EF4444; border: 1px solid #27272A; font-size: 9px; }
+
+/* ───── Theme 4: Glass Lite ───── */
+.t4 { background: rgba(20, 25, 35, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 0; }
+.t4 .handle { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.4); padding: 5px 0; margin-bottom: 0; font-weight: 400; }
+.t4 .row { padding: 0 8px 6px 8px; }
+.t4 .c { background: #F0B90B; }
+.t4 .n, .t4 .s, .t4 .t { background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 2px 4px; }
+.t4 .d { background: rgba(0,0,0,0.3); color: #F87171; border: 1px solid rgba(255,255,255,0.06); }
+
+/* ───── Theme 5: Terminal Dark ───── */
+.t5 { background: #0D0D0D; border: 1px solid #22AB94; border-radius: 0; padding: 0; box-shadow: 0 0 8px rgba(34,171,148,0.05); }
+.t5 .handle { background: #22AB9422; color: #22AB94; padding: 4px 0; margin-bottom: 0; font-family: 'JetBrains Mono', monospace; letter-spacing: 2px; }
+.t5 .row { padding: 0 8px 6px 8px; }
+.t5 .c { background: #22AB94; }
+.t5 .n, .t5 .s, .t5 .t { background: #111111; color: #22AB94; border: 1px solid #22AB9444; border-radius: 0; padding: 2px 4px; font-family: 'JetBrains Mono', monospace; }
+.t5 .d { background: #111111; color: #EF4444; border: 1px solid #22AB9444; }
+
+/* ───── Theme 6: Rose ───── */
+.t6 { background: #1C1018; border: 1px solid #9D174D; border-radius: 8px; padding: 0; box-shadow: 0 0 12px rgba(157,23,77,0.08); }
+.t6 .handle { background: linear-gradient(90deg, #9D174D, #BE185D); color: #FDF2F8; padding: 5px 0; margin-bottom: 0; }
+.t6 .row { padding: 0 8px 6px 8px; }
+.t6 .c { background: #EC4899; }
+.t6 .n, .t6 .s, .t6 .t { background: #140B10; color: #FBCFE8; border: 1px solid #9D174D; border-radius: 4px; padding: 2px 4px; }
+.t6 .d { background: #140B10; color: #EF4444; border: 1px solid #9D174D; }
+
+/* ───── Theme 7: Graphite ───── */
+.t7 { background: #121212; border: 1px solid #2E2E2E; border-radius: 12px; padding: 0; }
+.t7 .handle { background: #1E1E1E; color: #A0A0A0; padding: 5px 0; margin-bottom: 0; border-radius: 12px 12px 0 0; }
+.t7 .row { padding: 0 10px 7px 10px; }
+.t7 .c { background: #E0E0E0; }
+.t7 .n, .t7 .s, .t7 .t { background: #0A0A0A; color: #D0D0D0; border: 1px solid #2E2E2E; border-radius: 8px; padding: 3px 6px; }
+.t7 .d { background: #0A0A0A; color: #FF6B6B; border: 1px solid #2E2E2E; }
+
+/* ───── Theme 8: Electric ───── */
+.t8 { background: #0A0B1A; border: 1px solid #6366F1; border-radius: 6px; padding: 0; box-shadow: 0 0 15px rgba(99,102,241,0.08); }
+.t8 .handle { background: #6366F122; color: #818CF8; padding: 4px 0; margin-bottom: 0; letter-spacing: 1px; }
+.t8 .row { padding: 0 8px 6px 8px; }
+.t8 .c { background: #818CF8; }
+.t8 .n, .t8 .s, .t8 .t { background: #080817; color: #C7D2FE; border: 1px solid #6366F144; border-radius: 3px; padding: 2px 4px; }
+.t8 .d { background: #080817; color: #F87171; border: 1px solid #6366F144; }
+
+/* ───── Theme 9: Paper ───── */
+.t9 { background: #F5F0E8; border: 1px solid #D4C5A9; border-radius: 4px; padding: 0; }
+.t9 .handle { background: #E8DCC8; color: #5C4A32; padding: 4px 0; margin-bottom: 0; }
+.t9 .row { padding: 0 8px 6px 8px; }
+.t9 label { color: #8B7355 !important; }
+.t9 .c { background: #D4A017; }
+.t9 .n, .t9 .s, .t9 .t { background: #FEFCF5; color: #3D3224; border: 1px solid #D4C5A9; border-radius: 3px; padding: 2px 4px; }
+.t9 .d { background: #FEFCF5; color: #C0392B; border: 1px solid #D4C5A9; }
+
+/* ───── Theme 10: Aurora ───── */
+.t10 { background: linear-gradient(135deg, #0F2027, #203A43, #2C5364); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 0; }
+.t10 .handle { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); padding: 5px 0; margin-bottom: 0; }
+.t10 .row { padding: 0 8px 6px 8px; }
+.t10 .c { background: #4FD1C5; }
+.t10 .n, .t10 .s, .t10 .t { background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; padding: 2px 4px; }
+.t10 .d { background: rgba(0,0,0,0.3); color: #FC8181; border: 1px solid rgba(255,255,255,0.08); }
+</style>
+</head>
+<body>
+<h1>🎨 Дизайн панели — ещё 10 вариантов</h1>
+<div class="grid">
+
+<div class="card"><div class="num">#1</div><div class="name">Deep Ocean</div><div class="desc">Синий глубокий, тёмный</div>
+<div class="panel t1"><div class="handle">⊙ Луч</div><div class="row"><label>Цвет</label><div class="c"></div><input class="n" value="1"><select class="s"><option>—</option></select></div><div class="row"><input class="t" placeholder="Текст..."><button class="d">✕</button></div></div></div>
+
+<div class="card"><div class="num">#2</div><div class="name">Amber</div><div class="desc">Тёплый янтарь</div>
+<div class="panel t2"><div class="handle">⊙ Луч</div><div class="row"><label>Цвет</label><div class="c"></div><input class="n" value="1"><select class="s"><option>—</option></select></div><div class="row"><input class="t" placeholder="Текст..."><button class="d">✕</button></div></div></div>
+
+<div class="card"><div class="num">#3</div><div class="name">Midnight Compact</div><div class="desc">Ультра-компактный</div>
+<div class="panel t3"><div class="handle">⊙ Луч</div><div class="row"><label>Цвет</label><div class="c"></div><input class="n" value="1"><select class="s"><option>—</option></select></div><div class="row"><input class="t" placeholder="Текст..."><button class="d">✕</button></div></div></div>
+
+<div class="card"><div class="num">#4</div><div class="name">Glass Lite</div><div class="desc">Стекло, blur-фон</div>
+<div class="panel t4"><div class="handle">⊙ Луч</div><div class="row"><label>Цвет</label><div class="c"></div><input class="n" value="1"><select class="s"><option>—</option></select></div><div class="row"><input class="t" placeholder="Текст..."><button class="d">✕</button></div></div></div>
+
+<div class="card"><div class="num">#5</div><div class="name">Terminal Dark</div><div class="desc">Зелёный терминал</div>
+<div class="panel t5"><div class="handle">⊙ Луч</div><div class="row"><label>Цвет</label><div class="c"></div><input class="n" value="1"><select class="s"><option>—</option></select></div><div class="row"><input class="t" placeholder="Текст..."><button class="d">✕</button></div></div></div>
+
+<div class="card"><div class="num">#6</div><div class="name">Rose</div><div class="desc">Розовый градиент</div>
+<div class="panel t6"><div class="handle">⊙ Луч</div><div class="row"><label>Цвет</label><div class="c"></div><input class="n" value="1"><select class="s"><option>—</option></select></div><div class="row"><input class="t" placeholder="Текст..."><button class="d">✕</button></div></div></div>
+
+<div class="card"><div class="num">#7</div><div class="name">Graphite</div><div class="desc">Серый, скруглённый</div>
+<div class="panel t7"><div class="handle">⊙ Луч</div><div class="row"><label>Цвет</label><div class="c"></div><input class="n" value="1"><select class="s"><option>—</option></select></div><div class="row"><input class="t" placeholder="Текст..."><button class="d">✕</button></div></div></div>
+
+<div class="card"><div class="num">#8</div><div class="name">Electric</div><div class="desc">Индиго/фиолетовый</div>
+<div class="panel t8"><div class="handle">⊙ Луч</div><div class="row"><label>Цвет</label><div class="c"></div><input class="n" value="1"><select class="s"><option>—</option></select></div><div class="row"><input class="t" placeholder="Текст..."><button class="d">✕</button></div></div></div>
+
+<div class="card"><div class="num">#9</div><div class="name">Paper</div><div class="desc">Светлая, бумажная</div>
+<div class="panel t9"><div class="handle">⊙ Луч</div><div class="row"><label>Цвет</label><div class="c"></div><input class="n" value="1"><select class="s"><option>—</option></select></div><div class="row"><input class="t" placeholder="Текст..."><button class="d">✕</button></div></div></div>
+
+<div class="card"><div class="num">#10</div><div class="name">Aurora</div><div class="desc">Градиент сине-зелёный</div>
+<div class="panel t10"><div class="handle">⊙ Луч</div><div class="row"><label>Цвет</label><div class="c"></div><input class="n" value="1"><select class="s"><option>—</option></select></div><div class="row"><input class="t" placeholder="Текст..."><button class="d">✕</button></div></div></div>
+
+<!-- PyQt6 Floating Toolbar variants — 10 цветов -->
+<style>
+.py-bar {
+  background: #1E1E1E; border-radius: 12px; border: 1px solid #333;
+  padding: 5px 8px; display: flex; align-items: center; gap: 0;
+  width: 260px; margin: 0 auto;
+}
+.py-bar .sep { width: 1px; height: 22px; background: #333; margin: 0 3px; flex-shrink: 0; }
+.py-bar button {
+  background: transparent; border: none; color: #C8D0D8; font-size: 14px;
+  padding: 3px 6px; border-radius: 4px; cursor: pointer; white-space: nowrap;
+  font-family: 'Inter', sans-serif; line-height: 1;
+}
+.py-bar button:hover { background: #3D3D3D; color: #FFF; }
+.py-bar .dot {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid #555; display: inline-block;
+}
+.py-bar .sz { font-size: 12px; padding: 3px 8px; }
+.py-bar .sty {
+  font-size: 10px; padding: 2px 4px; background: rgba(255,255,255,0.05);
+  border-radius: 3px; cursor: pointer;
+}
+.py-bar .sty:hover { background: rgba(255,255,255,0.1); }
+</style>
+
+<div class="card"><div class="num">#11</div><div class="name">PyQt6 Gold</div><div class="desc">Золотой акцент + стиль линии</div>
+<div class="py-bar" style="border-color: #F0B90B55;">
+  <button>⠿</button><div class="sep"></div>
+  <span class="dot" style="background:#F0B90B;border-color:#F0B90B88;"></span><div class="sep"></div>
+  <select style="background:rgba(0,0,0,0.3);color:#F0B90B;border:1px solid #F0B90B44;border-radius:4px;padding:2px 4px;font-size:10px;font-family:'JetBrains Mono',monospace;">
+    <option>—</option>
+    <option>--</option>
+  </select>
+  <span class="sz" style="color:#E2E8F0;">1px</span><div class="sep"></div>
+  <button>A</button><div class="sep"></div>
+  <button>🗑</button>
+</div></div>
+
+<div class="card"><div class="num">#12</div><div class="name">PyQt6 Green</div><div class="desc">Зелёный акцент + стиль линии</div>
+<div class="py-bar" style="border-color: #22AB9455;">
+  <button>⠿</button><div class="sep"></div>
+  <span class="dot" style="background:#22AB94;border-color:#22AB9488;"></span><div class="sep"></div>
+  <select style="background:rgba(0,0,0,0.3);color:#22AB94;border:1px solid #22AB9444;border-radius:4px;padding:2px 4px;font-size:10px;font-family:'JetBrains Mono',monospace;">
+    <option>—</option>
+    <option>--</option>
+  </select>
+  <span class="sz" style="color:#E2E8F0;">1px</span><div class="sep"></div>
+  <button>A</button><div class="sep"></div>
+  <button>🗑</button>
+</div></div>
+
+<div class="card"><div class="num">#13</div><div class="name">PyQt6 Red</div><div class="desc">Красный акцент + стиль линии</div>
+<div class="py-bar" style="border-color: #F2364555;">
+  <button>⠿</button><div class="sep"></div>
+  <span class="dot" style="background:#F23645;border-color:#F2364588;"></span><div class="sep"></div>
+  <select style="background:rgba(0,0,0,0.3);color:#F23645;border:1px solid #F2364544;border-radius:4px;padding:2px 4px;font-size:10px;font-family:'JetBrains Mono',monospace;">
+    <option>—</option>
+    <option>--</option>
+  </select>
+  <span class="sz" style="color:#E2E8F0;">1px</span><div class="sep"></div>
+  <button>A</button><div class="sep"></div>
+  <button>🗑</button>
+</div></div>
+
+<div class="card"><div class="num">#14</div><div class="name">PyQt6 Purple</div><div class="desc">Фиолетовый акцент + стиль линии</div>
+<div class="py-bar" style="border-color: #7C3AED55;">
+  <button>⠿</button><div class="sep"></div>
+  <span class="dot" style="background:#7C3AED;border-color:#7C3AED88;"></span><div class="sep"></div>
+  <select style="background:rgba(0,0,0,0.3);color:#7C3AED;border:1px solid #7C3AED44;border-radius:4px;padding:2px 4px;font-size:10px;font-family:'JetBrains Mono',monospace;">
+    <option>—</option>
+    <option>--</option>
+  </select>
+  <span class="sz" style="color:#E2E8F0;">1px</span><div class="sep"></div>
+  <button>A</button><div class="sep"></div>
+  <button>🗑</button>
+</div></div>
+
+<div class="card"><div class="num">#15</div><div class="name">PyQt6 Blue</div><div class="desc">Синий акцент + стиль линии</div>
+<div class="py-bar" style="border-color: #3B82F655;">
+  <button>⠿</button><div class="sep"></div>
+  <span class="dot" style="background:#3B82F6;border-color:#3B82F688;"></span><div class="sep"></div>
+  <select style="background:rgba(0,0,0,0.3);color:#3B82F6;border:1px solid #3B82F644;border-radius:4px;padding:2px 4px;font-size:10px;font-family:'JetBrains Mono',monospace;">
+    <option>—</option>
+    <option>--</option>
+  </select>
+  <span class="sz" style="color:#E2E8F0;">1px</span><div class="sep"></div>
+  <button>A</button><div class="sep"></div>
+  <button>🗑</button>
+</div></div>
+
+<div class="card"><div class="num">#16</div><div class="name">PyQt6 Cyan</div><div class="desc">Бирюзовый акцент + стиль линии</div>
+<div class="py-bar" style="border-color: #06B6D455;">
+  <button>⠿</button><div class="sep"></div>
+  <span class="dot" style="background:#06B6D4;border-color:#06B6D488;"></span><div class="sep"></div>
+  <select style="background:rgba(0,0,0,0.3);color:#06B6D4;border:1px solid #06B6D444;border-radius:4px;padding:2px 4px;font-size:10px;font-family:'JetBrains Mono',monospace;">
+    <option>—</option>
+    <option>--</option>
+  </select>
+  <span class="sz" style="color:#E2E8F0;">1px</span><div class="sep"></div>
+  <button>A</button><div class="sep"></div>
+  <button>🗑</button>
+</div></div>
+
+<div class="card"><div class="num">#17</div><div class="name">PyQt6 Pink</div><div class="desc">Розовый акцент + стиль линии</div>
+<div class="py-bar" style="border-color: #EC489955;">
+  <button>⠿</button><div class="sep"></div>
+  <span class="dot" style="background:#EC4899;border-color:#EC489988;"></span><div class="sep"></div>
+  <select style="background:rgba(0,0,0,0.3);color:#EC4899;border:1px solid #EC489944;border-radius:4px;padding:2px 4px;font-size:10px;font-family:'JetBrains Mono',monospace;">
+    <option>—</option>
+    <option>--</option>
+  </select>
+  <span class="sz" style="color:#E2E8F0;">1px</span><div class="sep"></div>
+  <button>A</button><div class="sep"></div>
+  <button>🗑</button>
+</div></div>
+
+<div class="card"><div class="num">#18</div><div class="name">PyQt6 Orange</div><div class="desc">Оранжевый акцент + стиль линии</div>
+<div class="py-bar" style="border-color: #F9731655;">
+  <button>⠿</button><div class="sep"></div>
+  <span class="dot" style="background:#F97316;border-color:#F9731688;"></span><div class="sep"></div>
+  <select style="background:rgba(0,0,0,0.3);color:#F97316;border:1px solid #F9731644;border-radius:4px;padding:2px 4px;font-size:10px;font-family:'JetBrains Mono',monospace;">
+    <option>—</option>
+    <option>--</option>
+  </select>
+  <span class="sz" style="color:#E2E8F0;">1px</span><div class="sep"></div>
+  <button>A</button><div class="sep"></div>
+  <button>🗑</button>
+</div></div>
+
+<div class="card"><div class="num">#19</div><div class="name">PyQt6 White</div><div class="desc">Белый акцент + стиль линии</div>
+<div class="py-bar" style="border-color: #FFFFFF55;">
+  <button>⠿</button><div class="sep"></div>
+  <span class="dot" style="background:#FFFFFF;border-color:#FFFFFF88;"></span><div class="sep"></div>
+  <select style="background:rgba(0,0,0,0.3);color:#FFFFFF;border:1px solid #FFFFFF44;border-radius:4px;padding:2px 4px;font-size:10px;font-family:'JetBrains Mono',monospace;">
+    <option>—</option>
+    <option>--</option>
+  </select>
+  <span class="sz" style="color:#E2E8F0;">1px</span><div class="sep"></div>
+  <button>A</button><div class="sep"></div>
+  <button>🗑</button>
+</div></div>
+
+<div class="card"><div class="num">#20</div><div class="name">PyQt6 Grey</div><div class="desc">Серый акцент + стиль линии</div>
+<div class="py-bar" style="border-color: #6B728055;">
+  <button>⠿</button><div class="sep"></div>
+  <span class="dot" style="background:#6B7280;border-color:#6B728088;"></span><div class="sep"></div>
+  <select style="background:rgba(0,0,0,0.3);color:#6B7280;border:1px solid #6B728044;border-radius:4px;padding:2px 4px;font-size:10px;font-family:'JetBrains Mono',monospace;">
+    <option>—</option>
+    <option>--</option>
+  </select>
+  <span class="sz" style="color:#E2E8F0;">1px</span><div class="sep"></div>
+  <button>A</button><div class="sep"></div>
+  <button>🗑</button>
+</div></div>
+
+</div>
+</body>
+</html>

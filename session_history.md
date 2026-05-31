@@ -217,18 +217,37 @@ Commands: `--once`, `--deep`, `--interval N`, `--observe-candles`
 - Monitor bot: running with `--observe-candles` (or default loop)
 - 30-min candle observation completed: 60 snapshots, 0 anomalies, post-reload comparison clean
 - Rendering: migrated to D3 .join() pattern for candles & volumes (fixes "standing candles" bug)
+- Settings panel: PyQt6 Cyan floating toolbar design (horizontal, #1E1E1E, cyan accents)
+- 20 design variants available in `panels2.html` for comparison
+- Tools: fully interactive (hover highlight, left-click drag, right-click close panels)
 
-## Session 2025-05-31 (Part 4) — UI Fixes & Drawing Tools Refinement
+## Session 2025-05-31 (Part 5) — Tools Interaction & Settings Panel Redesign
 
 ### Changes
-1. **Ruler**: Restored original rendering logic (price labels at A/B + midpoint badge). Applied TradingView styling: solid semi-transparent line, endpoint circles with stroke, cleaner badge design. Preview during drag also improved.
-2. **X-axis Time Label**: Fixed positioning bug (was doubled by `margin.left`). Added background rect for readability.
-3. **Settings Panels (Ray & Text)**: Made both panels draggable via a handle header (`mousedown`/`mousemove`/`mouseup`). Added grab cursor styling.
-4. **Chart Types**: Removed line chart toggle — only Japanese candlesticks remain.
-5. **Eraser**: No longer clears auto-levels (Williams Fractals). Only removes drawn tools (lines, rays, rects, text, rulers).
-6. **Text Tool**: Replaced `prompt()` with a click-to-place marker + settings panel (color, font size, text, delete).
-7. **Crosshair**: Removed clamping to last candle — free movement across entire chart area.
-8. **Indicators UI**: Replaced checkboxes with click-to-toggle color-highlighted items.
+1. **Ray/Tools Interaction**: Redesigned to wintrading style:
+   - Hover → highlight (with 10px invisible hit area for easy targeting)
+   - Mousedown (left click) → opens settings panel + starts drag mode
+   - Drag (hold left button + move) → moves the tool
+   - Mouseup → ends drag, settings panel stays open
+   - Right-click outside panel → closes it
+2. **Settings Panel** (Ray & Text): Complete redesign:
+   - Horizontal floating toolbar layout (all controls in one row)
+   - Dark background `#1E1E1E`, border-radius `12px`, cyan accent `#06B6D4`
+   - Color swatches (5 preset colors) + circular color picker
+   - Line style selector (solid/dashed `<select>`)
+   - Thickness input, text label, delete button
+   - Panels are draggable by the handle
+3. **X-axis**: Fixed time formatting using `d3.scaleLinear` with custom `tickFormat` (HH:MM).
+   - Removed custom `xAxisTimeLabel` that was conflicting with `renderAxes()`
+4. **Fractal Price Labels**: Now rendered on `yAxisG` (right Y-axis) with rounded `rect` background (low opacity) and colored text (red/green).
+5. **Ray Text Labels**: Added dark rounded `rect` background with colored border behind the text on the chart.
+6. **Color Palette**: Added 5 preset color swatches (gold, green, red, purple, white) to ray & text panels.
+7. **Design Explorer**: Created `panels.html` (10 CSS variants) and `panels2.html` (20 variants including 10 PyQt6 floating toolbar colors).
+8. **Fixed syntax error**: Missing `if (drawMode === 'ruler' && pendingRuler) {` guard was causing JS parse error.
 
 ### Files Changed
-- `index.html` — all changes above
+- `index.html` — tools interaction, settings panel redesign, fractal labels, ray labels
+- `panels.html` — 10 CSS design variants (new)
+- `panels2.html` — 20 design variants including 10 PyQt6 colors (new)
+- `docs/system.md` — updated documentation
+- `session_history.md` — this update

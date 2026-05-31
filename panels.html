@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scrineer — Дизайн панелей</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080B10; --surface: #0E1319; --surface2: #12161E;
+      --border: #1C2128; --borderLight: #252B33;
+      --text: #C8D0D8; --textDim: #5C6570; --textFaint: #3A424D;
+      --green: #16C784; --red: #EA3943; --gold: #F0B90B;
+      --purple: #7C3AED;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg); color: var(--text);
+      padding: 40px;
+    }
+    h1 { font-size: 18px; color: var(--gold); margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }
+    h2 { font-size: 12px; color: var(--textDim); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 30px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .card .num {
+      font-size: 10px; color: var(--textFaint);
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 12px;
+    }
+    .card .name {
+      font-size: 13px; font-weight: 600; margin-bottom: 4px;
+    }
+    .card .desc {
+      font-size: 10px; color: var(--textDim); margin-bottom: 14px;
+    }
+    .ray-settings {
+      width: 200px; position: relative;
+      font-size: 11px; pointer-events: none;
+      margin: 0 auto;
+    }
+    .ray-handle {
+      cursor: grab; padding: 4px 8px; margin: -8px -8px 6px -8px;
+      border-radius: 6px 6px 0 0;
+      font-size: 10px; font-weight: 600; color: var(--textDim);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      user-select: none;
+    }
+    .ray-swatches { display: flex; gap: 4px; align-items: center; margin-bottom: 6px; }
+    .ray-swatch { width: 14px; height: 14px; border-radius: 50%; background: #F0B90B; border: 2px solid transparent; }
+    .ray-swatch:nth-child(2) { background: #22AB94; }
+    .ray-swatch:nth-child(3) { background: #F23645; }
+    .ray-swatch:nth-child(4) { background: #7C3AED; }
+    .ray-swatch:nth-child(5) { background: #CFCFCF; }
+    .ray-label { font-size: 10px; color: var(--textDim); margin-right: 4px; white-space: nowrap; }
+    .row { display: flex; gap: 5px; align-items: center; margin-bottom: 4px; }
+
+    /* Themes */
+    .st-1 { background: #0E1319; border: 1px solid #F0B90B44; border-radius: 6px; padding: 8px; box-shadow: 0 0 20px rgba(240,185,11,0.08); }
+    .st-1 .ray-handle { background: #F0B90B22; color: #F0B90B; margin: -8px -8px 6px -8px; padding: 4px 8px; border-radius: 6px 6px 0 0; }
+
+    .st-2 { background: rgba(14,19,25,0.7); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px; }
+    .st-2 .ray-handle { background: rgba(255,255,255,0.05); color: var(--textDim); margin: -8px -8px 6px -8px; padding: 4px 8px; border-radius: 6px 6px 0 0; }
+
+    .st-3 { background: #1A1F29; border: 1px solid #2A2F39; border-radius: 6px; padding: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    .st-3 .ray-handle { background: #2A2F39; color: var(--text); margin: -8px -8px 6px -8px; padding: 4px 8px; border-radius: 6px 6px 0 0; }
+
+    .st-4 { background: #0A0D12; border: 1px solid #F0B90B; border-radius: 6px; padding: 8px; box-shadow: 0 0 15px rgba(240,185,11,0.15), 0 0 30px rgba(240,185,11,0.05); }
+    .st-4 .ray-handle { background: #F0B90B; color: #080B10; font-weight: 700; margin: -8px -8px 6px -8px; padding: 4px 8px; border-radius: 6px 6px 0 0; }
+
+    .st-5 { background: #0E1319; border: 1px solid var(--border); border-radius: 4px; padding: 4px 6px; }
+    .st-5 .ray-handle { padding: 2px 6px; margin: -4px -6px 4px -6px; border-radius: 4px 4px 0 0; font-size: 9px; background: var(--border); color: var(--textDim); }
+
+    .st-6 { background: #C0C0C0; border: 2px solid #808080; border-top-color: #FFFFFF; border-left-color: #FFFFFF; border-radius: 2px; padding: 8px; box-shadow: 1px 1px 0 #404040; }
+    .st-6 .ray-handle { background: #000080; color: #FFFFFF; font-size: 10px; border-radius: 1px 1px 0 0; margin: -8px -8px 6px -8px; padding: 4px 8px; }
+    .st-6 .ray-label, .st-6 input { color: #000; }
+    .st-6 input { background: #fff; border-color: #808080; }
+
+    .st-7 { background: #0E1319; border: 2px solid var(--gold); border-radius: 0; padding: 6px; }
+    .st-7 .ray-handle { border-radius: 0; background: var(--gold); color: #080B10; margin: -6px -6px 6px -6px; padding: 4px 6px; }
+
+    .st-8 { background: #161B24; border: 1px solid transparent; border-radius: 8px; padding: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+    .st-8 .ray-handle { background: transparent; color: var(--gold); border-bottom: 1px solid var(--border); margin: -8px -8px 6px -8px; padding: 4px 8px; border-radius: 8px 8px 0 0; }
+
+    .st-9 { background: #0A0A0A; border: 1px solid #22AB94; border-radius: 6px; padding: 8px; box-shadow: 0 0 10px rgba(34,171,148,0.1); }
+    .st-9 .ray-handle { background: #22AB9422; color: #22AB94; font-family: 'JetBrains Mono', monospace; margin: -8px -8px 6px -8px; padding: 4px 8px; border-radius: 6px 6px 0 0; }
+    .st-9 input { background: #111; border-color: #22AB9444; color: #22AB94; }
+    .st-9 select { background: #111; border-color: #22AB9444; color: #22AB94; }
+
+    .st-10 { background: linear-gradient(135deg, #0E1319, #1A1F29); border: 1px solid #2A2F39; border-radius: 6px; padding: 8px; }
+    .st-10 .ray-handle { background: linear-gradient(90deg, #F0B90B22, transparent); color: var(--gold); margin: -8px -8px 6px -8px; padding: 4px 8px; border-radius: 6px 6px 0 0; }
+
+    .ray-settings input[type="color"] { width: 28px; height: 18px; padding: 0; border: none; cursor: pointer; background: transparent; }
+    .ray-settings input[type="number"] { width: 32px; }
+    .ray-settings select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 3px; padding: 2px; font-size: 10px; font-family: 'JetBrains Mono', monospace; }
+    .ray-settings button { padding: 2px 6px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 3px; cursor: pointer; font-size: 10px; }
+  </style>
+</head>
+<body>
+  <h1>🎨 Дизайн панели настроек инструментов</h1>
+  <div class="grid">
+    <div class="card"><div class="num">#1</div><div class="name">Default Gold</div><div class="desc">Тёмная, золотой акцент</div><div class="ray-settings st-1"><div class="ray-handle">⊙ Луч</div><div class="ray-swatches">...</div><div class="row"><span class="ray-label">Цвет</span><input type="color" value="#F0B90B"><input type="number" value="1"><select><option>—</option></select></div><div class="row"><input type="text" placeholder="Текст..."><button>✕</button></div></div></div>
+    <div class="card"><div class="num">#2</div><div class="name">Glass</div><div class="desc">Полупрозрачная, blur</div><div class="ray-settings st-2"><div class="ray-handle">⊙ Луч</div><div class="ray-swatches">...</div><div class="row"><span class="ray-label">Цвет</span><input type="color" value="#F0B90B"><input type="number" value="1"><select><option>—</option></select></div><div class="row"><input type="text" placeholder="Текст..."><button>✕</button></div></div></div>
+    <div class="card"><div class="num">#3</div><div class="name">Light</div><div class="desc">Светлая, soft-тени</div><div class="ray-settings st-3"><div class="ray-handle">⊙ Луч</div><div class="ray-swatches">...</div><div class="row"><span class="ray-label">Цвет</span><input type="color" value="#F0B90B"><input type="number" value="1"><select><option>—</option></select></div><div class="row"><input type="text" placeholder="Текст..."><button>✕</button></div></div></div>
+    <div class="card"><div class="num">#4</div><div class="name">Neon Gold</div><div class="desc">Золотое свечение</div><div class="ray-settings st-4"><div class="ray-handle">⊙ Луч</div><div class="ray-swatches">...</div><div class="row"><span class="ray-label">Цвет</span><input type="color" value="#F0B90B"><input type="number" value="1"><select><option>—</option></select></div><div class="row"><input type="text" placeholder="Текст..."><button>✕</button></div></div></div>
+    <div class="card"><div class="num">#5</div><div class="name">Compact</div><div class="desc">Минимальная отступы</div><div class="ray-settings st-5"><div class="ray-handle">⊙ Луч</div><div class="row"><span class="ray-label">Цвет</span><input type="color" value="#F0B90B"><input type="number" value="1"></div><div class="row"><input type="text" placeholder="Текст..."><button>✕</button></div></div></div>
+    <div class="card"><div class="num">#6</div><div class="name">Win95</div><div class="desc">Classic Windows style</div><div class="ray-settings st-6"><div class="ray-handle">⊙ Луч</div><div class="row"><span class="ray-label">Цвет</span><input type="color" value="#F0B90B"><input type="number" value="1"><select><option>—</option></select></div><div class="row"><input type="text" placeholder="Текст..."><button>✕</button></div></div></div>
+    <div class="card"><div class="num">#7</div><div class="name">Sharp</div><div class="desc">Без скруглений, золото</div><div class="ray-settings st-7"><div class="ray-handle">⊙ Луч</div><div class="ray-swatches">...</div><div class="row"><span class="ray-label">Цвет</span><input type="color" value="#F0B90B"><input type="number" value="1"><select><option>—</option></select></div><div class="row"><input type="text" placeholder="Текст..."><button>✕</button></div></div></div>
+    <div class="card"><div class="num">#8</div><div class="name">Card</div><div class="desc">Большая тень</div><div class="ray-settings st-8"><div class="ray-handle">⊙ Луч</div><div class="ray-swatches">...</div><div class="row"><span class="ray-label">Цвет</span><input type="color" value="#F0B90B"><input type="number" value="1"><select><option>—</option></select></div><div class="row"><input type="text" placeholder="Текст..."><button>✕</button></div></div></div>
+    <div class="card"><div class="num">#9</div><div class="name">Terminal</div><div class="desc">Зелёный/чёрный</div><div class="ray-settings st-9"><div class="ray-handle">⊙ Луч</div><div class="ray-swatches">...</div><div class="row"><span class="ray-label">Цвет</span><input type="color" value="#22AB94"><input type="number" value="1"><select><option>—</option></select></div><div class="row"><input type="text" placeholder="Текст..."><button>✕</button></div></div></div>
+    <div class="card"><div class="num">#10</div><div class="name">Gradient</div><div class="desc">Градиентный фон</div><div class="ray-settings st-10"><div class="ray-handle">⊙ Луч</div><div class="ray-swatches">...</div><div class="row"><span class="ray-label">Цвет</span><input type="color" value="#F0B90B"><input type="number" value="1"><select><option>—</option></select></div><div class="row"><input type="text" placeholder="Текст..."><button>✕</button></div></div></div>
+  </div>
+</body>
+</html>
