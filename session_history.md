@@ -251,3 +251,35 @@ Commands: `--once`, `--deep`, `--interval N`, `--observe-candles`
 - `panels2.html` — 20 design variants including 10 PyQt6 colors (new)
 - `docs/system.md` — updated documentation
 - `session_history.md` — this update
+
+## Session 2025-06-01 — V2 (PixiJS) Migration
+
+### Stack Change
+- **FROM**: Vanilla JS + D3.js SVG (monolithic `index.html`)
+- **TO**: TypeScript + PixiJS v8 (WebGL) + Vite
+
+### What was built
+1. **Project scaffold**: Vite + TypeScript + PixiJS project in `v2/`
+2. **Core**: types, constants, utils (fmtNum, calcSMA/BB/RSI/fractals)
+3. **Chart Engine** (PixiJS): candles, volumes, grid, Y-axis prices, X-axis time, crosshair (dashed)
+4. **WebSocket**: WSManager (price + kline), RingBuffer
+5. **Drawing tools**: Ray, rect, text, ruler, hline via Canvas (DrawingManager)
+6. **main.ts**: Init, tickers, coin table with sort/search, TF buttons, info blocks, price updates
+7. **Server**: Runs in tmux session for persistence
+8. **Documentation**: `docs/architecture.md`, `docs/next.md`, `docs/bugs.md`, `docs/howto.md`
+
+### Known gaps (from V1)
+- No indicators on chart (SMA, BB, RSI) — code in utils, no PixiJS render
+- No fractals — code in utils, no render
+- Dashed lines not working (PixiJS v8 has no stroke dash)
+- Settings panel for tools not fully integrated
+- Zoom/pan primitive (only range squeeze)
+- No magnet (snap to OHLC)
+- No fractal price labels on Y-axis
+- Crosshair Y-axis label only (no X-axis time follow)
+
+### Files Changed
+- `v2/` — complete rewrite
+- `server.py` — now serves `v2/dist/`
+- `docs/` — 4 new doc files
+- `session_history.md` — this update

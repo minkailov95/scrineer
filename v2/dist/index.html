@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scrineer V2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    .price-tag {
+      position: absolute; right: 0; z-index: 10;
+      padding: 2px 8px; border-radius: 3px 0 0 3px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; font-weight: 700;
+      line-height: 1.4; white-space: nowrap;
+      pointer-events: none;
+      transform: translateY(-50%);
+    }
+    .price-tag.up { background: #16C784; color: #080B10; }
+    .price-tag.down { background: #EA3943; color: #FFFFFF; }
+    .info-blocks {
+      position: absolute; bottom: 6px; left: 8px;
+      display: flex; gap: 4px; pointer-events: none;
+    }
+    .info-block {
+      padding: 4px 8px; border-radius: 4px; font-size: 10px;
+      background: rgba(8,11,16,0.85); border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .info-block .inf-label { color: var(--textDim); }
+    .info-block .inf-val { color: var(--text); font-weight: 700; font-family: 'JetBrains Mono'; }
+  </style>
+  <script type="module" crossorigin src="/assets/index-C1da_16A.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DVvKiBl1.css">
+</head>
+<body>
+  <nav class="top-nav">
+    <ul class="nav-tabs">
+      <li class="nav-tab">СКРИНЕР</li>
+      <li class="nav-tab">ПЛОТНОСТИ</li>
+      <li class="nav-tab">СТАКАН</li>
+      <li class="nav-tab">ТРЕНД</li>
+      <li class="nav-tab active">МОНЕТЫ</li>
+      <li class="nav-tab">ОПОВЕЩЕНИЯ</li>
+      <li class="nav-tab">ИЗБРАННОЕ</li>
+    </ul>
+    <div class="nav-right"><span id="navSym">Загрузка...</span> &bull; LIVE</div>
+  </nav>
+
+  <div class="toolbar">
+    <span class="sym-display" id="symDisplay">Загрузка...</span>
+    <span class="exch-badge">BINANCE</span>
+    <span class="sep"></span>
+    <span id="currentPriceLabel">—</span>
+    <span class="sep"></span>
+    <button class="tf-btn active">1м</button>
+    <button class="tf-btn">5м</button>
+    <button class="tf-btn">15м</button>
+    <button class="tf-btn">30м</button>
+    <button class="tf-btn">1ч</button>
+    <button class="tf-btn">2ч</button>
+    <button class="tf-btn">4ч</button>
+    <button class="tf-btn">1д</button>
+    <button class="tf-btn">1н</button>
+    <button class="tf-btn">1М</button>
+    <span class="sep"></span>
+    <span id="ohlcInfo">O: — H: — L: — C: —</span>
+  </div>
+
+  <div class="main">
+    <div class="draw-tools" id="drawTools">
+      <button class="draw-btn active" data-tool="cursor">🖱</button>
+      <button class="draw-btn" data-tool="hline">—</button>
+      <button class="draw-btn" data-tool="ray">→</button>
+      <button class="draw-btn" data-tool="rect">⬜</button>
+      <button class="draw-btn" data-tool="ruler">📏</button>
+      <button class="draw-btn" data-tool="text">T</button>
+      <button class="draw-btn" data-tool="eraser">⌫</button>
+      <button class="draw-btn" data-tool="magnet" style="margin-top:auto;">🧲</button>
+    </div>
+
+    <div class="chart-area" id="chartArea">
+      <div id="chartContainer"></div>
+      <div class="price-tag" id="priceTag" style="display:none;">—</div>
+      <div class="info-blocks">
+        <div class="info-block"><span class="inf-label">[24ч] Об:</span><span class="inf-val" id="infoVol">—</span></div>
+        <div class="info-block"><span class="inf-label">Изм:</span><span class="inf-val" id="infoChg">—</span></div>
+        <div class="info-block"><span class="inf-label">N [5м/14]:</span><span class="inf-val" id="infoNatr">—</span></div>
+        <div class="info-block"><span class="inf-label">Спред:</span><span class="inf-val" id="infoSpread">—</span></div>
+      </div>
+      <div class="crosshair-info" id="crosshairInfo"></div>
+    </div>
+
+    <div class="right-panel">
+      <div class="rp-header">
+        <span>МОНЕТА</span>
+        <input class="rp-search" placeholder="Поиск..." value="USDT" id="coinSearch" />
+      </div>
+      <div class="rp-table-wrap">
+        <table class="rp-table">
+          <thead>
+            <tr>
+              <th class="sort-header" data-sort="name">МОНЕТА</th>
+              <th class="sort-header" data-sort="natr">N5/14</th>
+              <th class="sort-header" data-sort="ch24">CH24h</th>
+              <th>OI5m</th>
+            </tr>
+          </thead>
+          <tbody id="coinBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span><span class="status-dot" id="statusDot"></span><span id="statusText">Инициализация V2...</span></span>
+    <span>Последнее обновление: <span id="updateTime">—</span></span>
+    <span>Scrineer V2 &bull; PixiJS</span>
+  </div>
+
+</body>
+</html>

@@ -218,7 +218,7 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
  
 if __name__ == "__main__":
     import os
-    os.chdir("/root/scrineer")
+    os.chdir("/root/scrineer/v2/dist")
     
     try:
         print("[server] Loading base tickers...")
