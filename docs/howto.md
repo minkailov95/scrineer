@@ -34,11 +34,13 @@
 
 | Файл | Что там |
 |---|---|
-| `docs/architecture.md` | стек, структура проекта, почему такие решения |
-| `docs/next.md` | что делать дальше (чеки-лист) |
+| `docs/decisions.md` | почему выбрали PixiJS, а не React |
+| `docs/architecture.md` | стек, структура, файлы, потоки |
+| `docs/changelog.md` | что сделано за все сессии |
+| `docs/next.md` | что делать дальше (todo) |
 | `docs/bugs.md` | открытые баги |
-| `docs/system.md` | старая документация V1 (для справки) |
-| `session_history.md` | история всех сессий |
+| `docs/credentials.md` | URL, порты, пароли |
+| `docs/howto.md` | этот файл — как со мной работать |
 
 ## Проекты
 
